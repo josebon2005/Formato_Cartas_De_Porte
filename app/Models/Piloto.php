@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Piloto extends Model
 {
-    protected $fillable = ['nombre'];
+    protected $fillable = ['nombre', 'cabezal_id'];
 
     public function cartasPorte()
     {
@@ -16,5 +16,10 @@ class Piloto extends Model
     public function licencias()
     {
         return $this->hasMany(Licencia::class);
+    }
+
+    public function cabezalUsual()
+    {
+        return $this->belongsTo(Cabezal::class, 'cabezal_id');
     }
 }

@@ -292,6 +292,7 @@
 
     <div class="screen-actions">
         <button class="btn" type="button" onclick="cleanPrint()">Imprimir</button>
+        <a class="btn" href="{{ route('cartas-porte.create') }}">Nueva carta</a>
         <a class="btn secondary" href="{{ route('cartas-porte.show', $cartaPorte) }}">Volver</a>
     </div>
 

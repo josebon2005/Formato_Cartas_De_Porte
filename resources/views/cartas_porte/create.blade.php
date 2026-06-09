@@ -11,6 +11,12 @@
     </div>
 
     <section class="panel">
+        @if ($cargadaDesdeUltima)
+            <div class="alert">
+                Formulario cargado con datos de la ultima carta. Puede editar cualquier campo antes de guardar.
+            </div>
+        @endif
+
         <form method="POST" action="{{ route('cartas-porte.store') }}">
             @csrf
             @include('cartas_porte._form')

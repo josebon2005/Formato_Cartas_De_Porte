@@ -23,9 +23,16 @@ class CatalogoController extends Controller
     public function edit(string $catalogo, int $id)
     {
         $config = $this->config($catalogo);
-        $registro = $config['model']::findOrFail($id);
+        $registro = $config['model']::query()
+            ->when($catalogo === 'pilotos', fn ($query) => $query->with(['licencias', 'cabezalUsual']))
+            ->findOrFail($id);
 
-        return view('catalogos.edit', compact('catalogo', 'config', 'registro'));
+        return view('catalogos.edit', [
+            'catalogo' => $catalogo,
+            'config' => $config,
+            'registro' => $registro,
+            ...$this->catalogFormData(),
+        ]);
     }
 
     public function create(string $catalogo)
@@ -33,7 +40,12 @@ class CatalogoController extends Controller
         $config = $this->config($catalogo);
         $registro = new $config['model'];
 
-        return view('catalogos.create', compact('catalogo', 'config', 'registro'));
+        return view('catalogos.create', [
+            'catalogo' => $catalogo,
+            'config' => $config,
+            'registro' => $registro,
+            ...$this->catalogFormData(),
+        ]);
     }
 
     public function store(Request $request, string $catalogo)
@@ -41,7 +53,11 @@ class CatalogoController extends Controller
         $config = $this->config($catalogo);
 
         $validated = $request->validate($this->rules($config));
-        $config['model']::create($validated);
+        $registro = $config['model']::create($this->mainData($validated, $config));
+
+        if ($catalogo === 'pilotos') {
+            $this->syncPilotoDetails($registro, $validated['licencia_numero'] ?? null, $validated['cabezal_placa'] ?? null);
+        }
 
         return redirect()
             ->route('catalogos.index')
@@ -54,7 +70,11 @@ class CatalogoController extends Controller
         $registro = $config['model']::findOrFail($id);
 
         $validated = $request->validate($this->rules($config, $registro));
-        $registro->update($validated);
+        $registro->update($this->mainData($validated, $config));
+
+        if ($catalogo === 'pilotos') {
+            $this->syncPilotoDetails($registro, $validated['licencia_numero'] ?? null, $validated['cabezal_placa'] ?? null);
+        }
 
         return redirect()
             ->route('catalogos.index')
@@ -84,12 +104,17 @@ class CatalogoController extends Controller
         $catalogos = [];
 
         foreach ($this->configs() as $key => $config) {
+            $query = $config['model']::query()
+                ->withCount($config['relation'])
+                ->orderBy($config['main']);
+
+            if ($key === 'pilotos') {
+                $query->with(['licencias', 'cabezalUsual']);
+            }
+
             $catalogos[$key] = [
                 ...$config,
-                'items' => $config['model']::query()
-                    ->withCount($config['relation'])
-                    ->orderBy($config['main'])
-                    ->get(),
+                'items' => $query->get(),
             ];
         }
 
@@ -111,7 +136,53 @@ class CatalogoController extends Controller
             $rules['descripcion'] = ['nullable', 'string', 'max:255'];
         }
 
+        if (($config['extras'] ?? null) === 'piloto_detalles') {
+            $rules['licencia_numero'] = ['nullable', 'string', 'max:255'];
+            $rules['cabezal_placa'] = ['nullable', 'string', 'max:255'];
+        }
+
         return $rules;
+    }
+
+    private function mainData(array $validated, array $config): array
+    {
+        return collect($validated)
+            ->only(array_filter([$config['main'], $config['extra'] ?? null]))
+            ->all();
+    }
+
+    private function syncPilotoDetails(Piloto $piloto, ?string $licenciaNumero, ?string $cabezalPlaca): void
+    {
+        $cabezalPlaca = trim((string) $cabezalPlaca);
+        $piloto->forceFill([
+            'cabezal_id' => $cabezalPlaca !== ''
+                ? Cabezal::firstOrCreate(['placa' => $cabezalPlaca])->id
+                : null,
+        ])->save();
+
+        $licenciaNumero = trim((string) $licenciaNumero);
+        $licenciaActual = $piloto->licencias()->oldest('id')->first();
+
+        if ($licenciaNumero === '') {
+            $licenciaActual?->update(['piloto_id' => null]);
+
+            return;
+        }
+
+        if ($licenciaActual && $licenciaActual->numero !== $licenciaNumero) {
+            $licenciaActual->update(['piloto_id' => null]);
+        }
+
+        Licencia::firstOrCreate(['numero' => $licenciaNumero])->update([
+            'piloto_id' => $piloto->id,
+        ]);
+    }
+
+    private function catalogFormData(): array
+    {
+        return [
+            'cabezales' => Cabezal::orderBy('placa')->get(),
+        ];
     }
 
     private function estaEnUso(Model $registro, string $relation): bool
@@ -154,6 +225,7 @@ class CatalogoController extends Controller
                 'table' => 'pilotos',
                 'main' => 'nombre',
                 'main_label' => 'Nombre',
+                'extras' => 'piloto_detalles',
                 'relation' => 'cartasPorte',
             ],
             'cabezales' => [

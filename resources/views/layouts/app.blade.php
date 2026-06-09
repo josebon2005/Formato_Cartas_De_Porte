@@ -153,6 +153,48 @@
 
         .catalog-input input { min-width: 0; }
 
+        .catalog-field {
+            position: relative;
+        }
+
+        .catalog-suggestions {
+            background: var(--white);
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            box-shadow: 0 12px 24px rgba(17, 24, 39, .14);
+            display: none;
+            left: 0;
+            max-height: 220px;
+            overflow-y: auto;
+            position: absolute;
+            right: 0;
+            top: calc(100% + 4px);
+            z-index: 10;
+        }
+
+        .catalog-suggestions.open {
+            display: block;
+        }
+
+        .catalog-suggestion {
+            background: var(--white);
+            border: 0;
+            border-bottom: 1px solid var(--line);
+            color: #111827;
+            cursor: pointer;
+            display: block;
+            font: inherit;
+            padding: 10px 12px;
+            text-align: left;
+            width: 100%;
+        }
+
+        .catalog-suggestion:hover,
+        .catalog-suggestion:focus {
+            background: #f7f7f8;
+            outline: none;
+        }
+
         .btn {
             align-items: center;
             background: var(--ink);
@@ -256,6 +298,12 @@
 
         .error {
             color: var(--danger);
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        .field-help {
+            color: var(--muted);
             font-size: 12px;
             margin-top: 5px;
         }

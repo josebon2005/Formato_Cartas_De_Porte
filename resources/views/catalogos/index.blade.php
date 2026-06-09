@@ -30,6 +30,10 @@
                     <thead>
                         <tr>
                             <th>{{ $catalogo['main_label'] }}</th>
+                            @if (($catalogo['extras'] ?? null) === 'piloto_detalles')
+                                <th>Licencia</th>
+                                <th>Placa usual</th>
+                            @endif
                             @if (isset($catalogo['extra_label']))
                                 <th>{{ $catalogo['extra_label'] }}</th>
                             @endif
@@ -44,6 +48,10 @@
                             @endphp
                             <tr>
                                 <td>{{ $item->{$catalogo['main']} }}</td>
+                                @if (($catalogo['extras'] ?? null) === 'piloto_detalles')
+                                    <td>{{ $item->licencias->first()?->numero }}</td>
+                                    <td>{{ $item->cabezalUsual?->placa }}</td>
+                                @endif
                                 @if (isset($catalogo['extra_label']))
                                     <td>{{ $item->descripcion }}</td>
                                 @endif
@@ -61,7 +69,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="{{ isset($catalogo['extra_label']) ? 4 : 3 }}" class="empty">No hay registros en este apartado.</td>
+                                <td colspan="{{ 3 + (isset($catalogo['extra_label']) ? 1 : 0) + (($catalogo['extras'] ?? null) === 'piloto_detalles' ? 2 : 0) }}" class="empty">No hay registros en este apartado.</td>
                             </tr>
                         @endforelse
                     </tbody>

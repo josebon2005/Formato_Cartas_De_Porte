@@ -9,6 +9,7 @@
             <p class="subtle">Registro guardado el {{ $cartaPorte->created_at?->format('d/m/Y H:i') }}.</p>
         </div>
         <div class="actions">
+            <a class="btn accent" href="{{ route('cartas-porte.create') }}">Nueva carta</a>
             <a class="btn" href="{{ route('cartas-porte.imprimir', $cartaPorte) }}">Imprimir</a>
             <a class="btn secondary" href="{{ route('cartas-porte.edit', $cartaPorte) }}">Editar</a>
             <a class="btn secondary" href="{{ route('cartas-porte.index') }}">Volver</a>

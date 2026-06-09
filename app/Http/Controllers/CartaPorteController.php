@@ -39,11 +39,13 @@ class CartaPorteController extends Controller
      */
     public function create()
     {
+        $ultimaCarta = CartaPorte::with(['consignatario', 'procedencia', 'piloto', 'cabezal', 'licencia'])
+            ->latest('id')
+            ->first();
+
         return view('cartas_porte.create', [
-            'cartaPorte' => new CartaPorte([
-                'numero_correlativo' => $this->nextCorrelativo(),
-                'fecha' => now(),
-            ]),
+            'cartaPorte' => $this->newCartaPorte($ultimaCarta),
+            'cargadaDesdeUltima' => (bool) $ultimaCarta,
             ...$this->catalogs(),
         ]);
     }
@@ -195,12 +197,55 @@ class CartaPorteController extends Controller
         return ((int) CartaPorte::max('numero_correlativo')) + 1;
     }
 
+    private function newCartaPorte(?CartaPorte $base = null): CartaPorte
+    {
+        $data = [
+            'numero_correlativo' => $this->nextCorrelativo(),
+            'fecha' => now(),
+        ];
+
+        if ($base) {
+            $data += [
+                'consignatario_id' => $base->consignatario_id,
+                'procedencia_id' => $base->procedencia_id,
+                'destino' => $base->destino,
+                'poliza' => $base->poliza,
+                'id_documento' => $base->id_documento,
+                'da' => $base->da,
+                'mi' => $base->mi,
+                'contacto' => $base->contacto,
+                'telefono' => $base->telefono,
+                'bultos' => $base->bultos,
+                'contenido' => $base->contenido,
+                'peso_kls' => $base->peso_kls,
+                'vapor' => $base->vapor,
+                'fecha_vapor' => $base->fecha_vapor,
+                'bl' => $base->bl,
+                'piloto_id' => $base->piloto_id,
+                'cabezal_id' => $base->cabezal_id,
+                'licencia_id' => $base->licencia_id,
+            ];
+        }
+
+        $cartaPorte = new CartaPorte($data);
+
+        if ($base) {
+            $cartaPorte->setRelation('consignatario', $base->consignatario);
+            $cartaPorte->setRelation('procedencia', $base->procedencia);
+            $cartaPorte->setRelation('piloto', $base->piloto);
+            $cartaPorte->setRelation('cabezal', $base->cabezal);
+            $cartaPorte->setRelation('licencia', $base->licencia);
+        }
+
+        return $cartaPorte;
+    }
+
     private function catalogs(): array
     {
         return [
             'consignatarios' => Consignatario::orderBy('nombre')->get(),
             'procedencias' => Procedencia::orderBy('nombre')->get(),
-            'pilotos' => Piloto::orderBy('nombre')->get(),
+            'pilotos' => Piloto::with(['licencias', 'cabezalUsual'])->orderBy('nombre')->get(),
             'cabezales' => Cabezal::orderBy('placa')->get(),
             'licencias' => Licencia::orderBy('numero')->get(),
         ];

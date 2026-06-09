@@ -1,6 +1,20 @@
 @php
     $fechaValue = old('fecha', $cartaPorte->fecha?->format('Y-m-d') ?? now()->toDateString());
     $fechaVaporValue = old('fecha_vapor', $cartaPorte->fecha_vapor?->format('Y-m-d'));
+    $catalogoPilotos = $pilotos->map(function ($item) {
+        $licencia = $item->licencias->first();
+
+        return [
+            'id' => $item->id,
+            'value' => $item->nombre,
+            'licencia' => $licencia
+                ? ['id' => $licencia->id, 'value' => $licencia->numero]
+                : null,
+            'cabezal' => $item->cabezalUsual
+                ? ['id' => $item->cabezalUsual->id, 'value' => $item->cabezalUsual->placa]
+                : null,
+        ];
+    })->values();
 @endphp
 
 <div class="grid">
@@ -20,34 +34,24 @@
         @error('destino') <div class="error">{{ $message }}</div> @enderror
     </div>
 
-    <div class="span-2">
+    <div class="span-2 catalog-field">
         <label for="consignatario_nombre">Consignatario</label>
         <div class="catalog-input">
-            <input id="consignatario_nombre" name="consignatario_nombre" list="consignatarios_list" required value="{{ old('consignatario_nombre', $cartaPorte->consignatario?->nombre) }}" autocomplete="off">
+            <input id="consignatario_nombre" name="consignatario_nombre" required value="{{ old('consignatario_nombre', $cartaPorte->consignatario?->nombre) }}" autocomplete="off">
             <input id="consignatario_id" name="consignatario_id" type="hidden" value="{{ old('consignatario_id', $cartaPorte->consignatario_id) }}">
             <button class="btn secondary" type="button" onclick="markNew('consignatario_nombre', 'consignatario_id')">+ Nuevo</button>
         </div>
-        <datalist id="consignatarios_list">
-            @foreach ($consignatarios as $item)
-                <option value="{{ $item->nombre }}"></option>
-            @endforeach
-        </datalist>
         @error('consignatario_nombre') <div class="error">{{ $message }}</div> @enderror
         @error('consignatario_id') <div class="error">{{ $message }}</div> @enderror
     </div>
 
-    <div>
+    <div class="catalog-field">
         <label for="procedencia_nombre">Procedencia</label>
         <div class="catalog-input">
-            <input id="procedencia_nombre" name="procedencia_nombre" list="procedencias_list" required value="{{ old('procedencia_nombre', $cartaPorte->procedencia?->nombre) }}" autocomplete="off">
+            <input id="procedencia_nombre" name="procedencia_nombre" required value="{{ old('procedencia_nombre', $cartaPorte->procedencia?->nombre) }}" autocomplete="off">
             <input id="procedencia_id" name="procedencia_id" type="hidden" value="{{ old('procedencia_id', $cartaPorte->procedencia_id) }}">
             <button class="btn secondary" type="button" onclick="markNew('procedencia_nombre', 'procedencia_id')">+ Nuevo</button>
         </div>
-        <datalist id="procedencias_list">
-            @foreach ($procedencias as $item)
-                <option value="{{ $item->nombre }}"></option>
-            @endforeach
-        </datalist>
         @error('procedencia_nombre') <div class="error">{{ $message }}</div> @enderror
         @error('procedencia_id') <div class="error">{{ $message }}</div> @enderror
     </div>
@@ -120,50 +124,36 @@
         @error('bl') <div class="error">{{ $message }}</div> @enderror
     </div>
 
-    <div>
+    <div class="catalog-field">
         <label for="piloto_nombre">Piloto</label>
         <div class="catalog-input">
-            <input id="piloto_nombre" name="piloto_nombre" list="pilotos_list" required value="{{ old('piloto_nombre', $cartaPorte->piloto?->nombre) }}" autocomplete="off">
+            <input id="piloto_nombre" name="piloto_nombre" required value="{{ old('piloto_nombre', $cartaPorte->piloto?->nombre) }}" placeholder="Escriba o seleccione un piloto" autocomplete="off">
             <input id="piloto_id" name="piloto_id" type="hidden" value="{{ old('piloto_id', $cartaPorte->piloto_id) }}">
             <button class="btn secondary" type="button" onclick="markNew('piloto_nombre', 'piloto_id')">+ Nuevo</button>
         </div>
-        <datalist id="pilotos_list">
-            @foreach ($pilotos as $item)
-                <option value="{{ $item->nombre }}"></option>
-            @endforeach
-        </datalist>
+        <div class="field-help">Se autocompleta si el piloto esta registrado, pero puede editarse manualmente.</div>
         @error('piloto_nombre') <div class="error">{{ $message }}</div> @enderror
         @error('piloto_id') <div class="error">{{ $message }}</div> @enderror
     </div>
 
-    <div>
+    <div class="catalog-field">
         <label for="cabezal_placa">Cabezal placas</label>
         <div class="catalog-input">
-            <input id="cabezal_placa" name="cabezal_placa" list="cabezales_list" required value="{{ old('cabezal_placa', $cartaPorte->cabezal?->placa) }}" autocomplete="off">
+            <input id="cabezal_placa" name="cabezal_placa" required value="{{ old('cabezal_placa', $cartaPorte->cabezal?->placa) }}" autocomplete="off">
             <input id="cabezal_id" name="cabezal_id" type="hidden" value="{{ old('cabezal_id', $cartaPorte->cabezal_id) }}">
             <button class="btn secondary" type="button" onclick="markNew('cabezal_placa', 'cabezal_id')">+ Nuevo</button>
         </div>
-        <datalist id="cabezales_list">
-            @foreach ($cabezales as $item)
-                <option value="{{ $item->placa }}"></option>
-            @endforeach
-        </datalist>
         @error('cabezal_placa') <div class="error">{{ $message }}</div> @enderror
         @error('cabezal_id') <div class="error">{{ $message }}</div> @enderror
     </div>
 
-    <div>
+    <div class="catalog-field">
         <label for="licencia_numero">Licencia</label>
         <div class="catalog-input">
-            <input id="licencia_numero" name="licencia_numero" list="licencias_list" required value="{{ old('licencia_numero', $cartaPorte->licencia?->numero) }}" autocomplete="off">
+            <input id="licencia_numero" name="licencia_numero" required value="{{ old('licencia_numero', $cartaPorte->licencia?->numero) }}" autocomplete="off">
             <input id="licencia_id" name="licencia_id" type="hidden" value="{{ old('licencia_id', $cartaPorte->licencia_id) }}">
             <button class="btn secondary" type="button" onclick="markNew('licencia_numero', 'licencia_id')">+ Nuevo</button>
         </div>
-        <datalist id="licencias_list">
-            @foreach ($licencias as $item)
-                <option value="{{ $item->numero }}"></option>
-            @endforeach
-        </datalist>
         @error('licencia_numero') <div class="error">{{ $message }}</div> @enderror
         @error('licencia_id') <div class="error">{{ $message }}</div> @enderror
     </div>
@@ -179,23 +169,116 @@
         const catalogos = {
             consignatario: @json($consignatarios->map(fn ($item) => ['id' => $item->id, 'value' => $item->nombre])->values()),
             procedencia: @json($procedencias->map(fn ($item) => ['id' => $item->id, 'value' => $item->nombre])->values()),
-            piloto: @json($pilotos->map(fn ($item) => ['id' => $item->id, 'value' => $item->nombre])->values()),
+            piloto: @json($catalogoPilotos, JSON_UNESCAPED_UNICODE),
             cabezal: @json($cabezales->map(fn ($item) => ['id' => $item->id, 'value' => $item->placa])->values()),
             licencia: @json($licencias->map(fn ($item) => ['id' => $item->id, 'value' => $item->numero])->values()),
         };
 
-        function bindCatalog(inputId, hiddenId, items) {
+        function normalizeCatalogValue(value) {
+            return value
+                .trim()
+                .toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '');
+        }
+
+        function bindCatalog(inputId, hiddenId, items, onMatch = null) {
             const input = document.getElementById(inputId);
             const hidden = document.getElementById(hiddenId);
-            const sync = () => {
-                const value = input.value.trim().toLowerCase();
-                const match = items.find(item => item.value.toLowerCase() === value);
+
+            if (!input || !hidden) {
+                return;
+            }
+
+            const field = input.closest('.catalog-field');
+
+            if (!field) {
+                return;
+            }
+
+            const suggestions = document.createElement('div');
+            suggestions.className = 'catalog-suggestions';
+
+            field.appendChild(suggestions);
+
+            const sync = (notifyMatch = true) => {
+                const value = normalizeCatalogValue(input.value);
+                const match = items.find(item => normalizeCatalogValue(item.value) === value);
                 hidden.value = match ? match.id : '';
+
+                if (match && onMatch && notifyMatch) {
+                    onMatch(match);
+                }
+
+                return match;
             };
 
-            input.addEventListener('input', sync);
-            input.addEventListener('change', sync);
-            sync();
+            const closeSuggestions = () => {
+                suggestions.classList.remove('open');
+                suggestions.innerHTML = '';
+            };
+
+            const chooseItem = (item) => {
+                input.value = item.value;
+                hidden.value = item.id;
+
+                if (onMatch) {
+                    onMatch(item);
+                }
+
+                closeSuggestions();
+                input.focus();
+            };
+
+            const renderSuggestions = () => {
+                const value = normalizeCatalogValue(input.value);
+                const matches = items
+                    .filter(item => normalizeCatalogValue(item.value).includes(value))
+                    .sort((first, second) => {
+                        const firstValue = normalizeCatalogValue(first.value);
+                        const secondValue = normalizeCatalogValue(second.value);
+                        const firstStarts = firstValue.startsWith(value);
+                        const secondStarts = secondValue.startsWith(value);
+
+                        if (firstStarts !== secondStarts) {
+                            return firstStarts ? -1 : 1;
+                        }
+
+                        return first.value.localeCompare(second.value);
+                    })
+                    .slice(0, 20);
+
+                suggestions.innerHTML = '';
+
+                if (!matches.length) {
+                    closeSuggestions();
+                    return;
+                }
+
+                matches.forEach(item => {
+                    const option = document.createElement('button');
+                    option.className = 'catalog-suggestion';
+                    option.type = 'button';
+                    option.textContent = item.value;
+                    option.addEventListener('mousedown', event => event.preventDefault());
+                    option.addEventListener('click', () => chooseItem(item));
+                    suggestions.appendChild(option);
+                });
+
+                suggestions.classList.add('open');
+            };
+
+            input.addEventListener('input', () => sync());
+            input.addEventListener('input', renderSuggestions);
+            input.addEventListener('focus', renderSuggestions);
+            input.addEventListener('change', () => {
+                sync();
+                closeSuggestions();
+            });
+            input.addEventListener('blur', () => {
+                window.setTimeout(closeSuggestions, 120);
+            });
+            sync(false);
         }
 
         function markNew(inputId, hiddenId) {
@@ -205,9 +288,26 @@
             input.select();
         }
 
+        function setCatalogValue(inputId, hiddenId, item) {
+            if (!item) {
+                return;
+            }
+
+            const input = document.getElementById(inputId);
+            const hidden = document.getElementById(hiddenId);
+
+            input.value = item.value;
+            hidden.value = item.id;
+        }
+
+        function fillDriverDetails(piloto) {
+            setCatalogValue('licencia_numero', 'licencia_id', piloto.licencia);
+            setCatalogValue('cabezal_placa', 'cabezal_id', piloto.cabezal);
+        }
+
         bindCatalog('consignatario_nombre', 'consignatario_id', catalogos.consignatario);
         bindCatalog('procedencia_nombre', 'procedencia_id', catalogos.procedencia);
-        bindCatalog('piloto_nombre', 'piloto_id', catalogos.piloto);
+        bindCatalog('piloto_nombre', 'piloto_id', catalogos.piloto, fillDriverDetails);
         bindCatalog('cabezal_placa', 'cabezal_id', catalogos.cabezal);
         bindCatalog('licencia_numero', 'licencia_id', catalogos.licencia);
     </script>
