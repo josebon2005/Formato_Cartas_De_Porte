@@ -1,0 +1,208 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Cabezal;
+use App\Models\CartaPorte;
+use App\Models\Consignatario;
+use App\Models\Licencia;
+use App\Models\Piloto;
+use App\Models\Procedencia;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+
+class CartaPorteController extends Controller
+{
+    /**
+     * Display a listing of the resource.
+     */
+    public function index(Request $request)
+    {
+        $cartas = CartaPorte::query()
+            ->with(['consignatario', 'procedencia', 'piloto'])
+            ->when($request->filled('fecha'), fn ($query) => $query->whereDate('fecha', $request->fecha))
+            ->when($request->filled('consignatario'), function ($query) use ($request) {
+                $query->whereHas('consignatario', fn ($subQuery) => $subQuery->where('nombre', 'like', '%'.$request->consignatario.'%'));
+            })
+            ->when($request->filled('bl'), fn ($query) => $query->where('bl', 'like', '%'.$request->bl.'%'))
+            ->when($request->filled('poliza'), fn ($query) => $query->where('poliza', 'like', '%'.$request->poliza.'%'))
+            ->latest('fecha')
+            ->latest('id')
+            ->paginate(12)
+            ->withQueryString();
+
+        return view('cartas_porte.index', compact('cartas'));
+    }
+
+    /**
+     * Show the form for creating a new resource.
+     */
+    public function create()
+    {
+        return view('cartas_porte.create', [
+            'cartaPorte' => new CartaPorte([
+                'numero_correlativo' => $this->nextCorrelativo(),
+                'fecha' => now(),
+            ]),
+            ...$this->catalogs(),
+        ]);
+    }
+
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(Request $request)
+    {
+        $data = $this->validatedData($request);
+        $cartaPorte = CartaPorte::create($data);
+
+        return redirect()
+            ->route('cartas-porte.imprimir', [$cartaPorte, 'autoprint' => 1])
+            ->with('status', 'Carta de porte creada correctamente. Lista para imprimir.');
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show(CartaPorte $cartaPorte)
+    {
+        $cartaPorte->load(['consignatario', 'procedencia', 'piloto', 'cabezal', 'licencia']);
+
+        return view('cartas_porte.show', compact('cartaPorte'));
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit(CartaPorte $cartaPorte)
+    {
+        $cartaPorte->load(['consignatario', 'procedencia', 'piloto', 'cabezal', 'licencia']);
+
+        return view('cartas_porte.edit', [
+            'cartaPorte' => $cartaPorte,
+            ...$this->catalogs(),
+        ]);
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, CartaPorte $cartaPorte)
+    {
+        $data = $this->validatedData($request, $cartaPorte);
+        $cartaPorte->update($data);
+
+        return redirect()
+            ->route('cartas-porte.show', $cartaPorte)
+            ->with('status', 'Carta de porte actualizada correctamente.');
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(CartaPorte $cartaPorte)
+    {
+        $cartaPorte->delete();
+
+        return redirect()
+            ->route('cartas-porte.index')
+            ->with('status', 'Carta de porte eliminada correctamente.');
+    }
+
+    public function imprimir(CartaPorte $cartaPorte)
+    {
+        $cartaPorte->load(['consignatario', 'procedencia', 'piloto', 'cabezal', 'licencia']);
+
+        return view('cartas_porte.print', compact('cartaPorte'));
+    }
+
+    private function validatedData(Request $request, ?CartaPorte $cartaPorte = null): array
+    {
+        $validated = $request->validate([
+            'numero_correlativo' => [
+                'required',
+                'integer',
+                'min:1',
+                Rule::unique('cartas_porte', 'numero_correlativo')->ignore($cartaPorte?->id),
+            ],
+            'fecha' => ['required', 'date'],
+            'consignatario_id' => ['nullable', 'exists:consignatarios,id'],
+            'consignatario_nombre' => ['required_without:consignatario_id', 'nullable', 'string', 'max:255'],
+            'procedencia_id' => ['nullable', 'exists:procedencias,id'],
+            'procedencia_nombre' => ['required_without:procedencia_id', 'nullable', 'string', 'max:255'],
+            'destino' => ['nullable', 'string', 'max:255'],
+            'poliza' => ['nullable', 'string', 'max:255'],
+            'id_documento' => ['nullable', 'string', 'max:255'],
+            'da' => ['nullable', 'string', 'max:255'],
+            'mi' => ['nullable', 'string', 'max:255'],
+            'contacto' => ['nullable', 'string', 'max:255'],
+            'telefono' => ['nullable', 'string', 'max:255'],
+            'contenedor' => ['nullable', 'string', 'max:255'],
+            'bultos' => ['nullable', 'string', 'max:255'],
+            'contenido' => ['nullable', 'string'],
+            'peso_kls' => ['nullable', 'string', 'max:255'],
+            'vapor' => ['nullable', 'string', 'max:255'],
+            'fecha_vapor' => ['nullable', 'date'],
+            'bl' => ['nullable', 'string', 'max:255'],
+            'piloto_id' => ['nullable', 'exists:pilotos,id'],
+            'piloto_nombre' => ['required_without:piloto_id', 'nullable', 'string', 'max:255'],
+            'cabezal_id' => ['nullable', 'exists:cabezales,id'],
+            'cabezal_placa' => ['required_without:cabezal_id', 'nullable', 'string', 'max:255'],
+            'licencia_id' => ['nullable', 'exists:licencias,id'],
+            'licencia_numero' => ['required_without:licencia_id', 'nullable', 'string', 'max:255'],
+        ]);
+
+        $pilotoId = $this->resolveCatalog(Piloto::class, 'nombre', $validated['piloto_id'] ?? null, $validated['piloto_nombre'] ?? null);
+
+        return [
+            'numero_correlativo' => $validated['numero_correlativo'],
+            'fecha' => $validated['fecha'],
+            'consignatario_id' => $this->resolveCatalog(Consignatario::class, 'nombre', $validated['consignatario_id'] ?? null, $validated['consignatario_nombre'] ?? null),
+            'procedencia_id' => $this->resolveCatalog(Procedencia::class, 'nombre', $validated['procedencia_id'] ?? null, $validated['procedencia_nombre'] ?? null),
+            'destino' => $validated['destino'] ?? null,
+            'poliza' => $validated['poliza'] ?? null,
+            'id_documento' => $validated['id_documento'] ?? null,
+            'da' => $validated['da'] ?? null,
+            'mi' => $validated['mi'] ?? null,
+            'contacto' => $validated['contacto'] ?? null,
+            'telefono' => $validated['telefono'] ?? null,
+            'contenedor' => $validated['contenedor'] ?? null,
+            'bultos' => $validated['bultos'] ?? null,
+            'contenido' => $validated['contenido'] ?? null,
+            'peso_kls' => $validated['peso_kls'] ?? null,
+            'vapor' => $validated['vapor'] ?? null,
+            'fecha_vapor' => $validated['fecha_vapor'] ?? null,
+            'bl' => $validated['bl'] ?? null,
+            'piloto_id' => $pilotoId,
+            'cabezal_id' => $this->resolveCatalog(Cabezal::class, 'placa', $validated['cabezal_id'] ?? null, $validated['cabezal_placa'] ?? null),
+            'licencia_id' => $this->resolveCatalog(Licencia::class, 'numero', $validated['licencia_id'] ?? null, $validated['licencia_numero'] ?? null, ['piloto_id' => $pilotoId]),
+        ];
+    }
+
+    private function resolveCatalog(string $modelClass, string $column, ?string $id, ?string $value, array $extra = []): int
+    {
+        if ($id) {
+            return (int) $id;
+        }
+
+        $value = trim((string) $value);
+
+        return $modelClass::firstOrCreate([$column => $value], $extra)->id;
+    }
+
+    private function nextCorrelativo(): int
+    {
+        return ((int) CartaPorte::max('numero_correlativo')) + 1;
+    }
+
+    private function catalogs(): array
+    {
+        return [
+            'consignatarios' => Consignatario::orderBy('nombre')->get(),
+            'procedencias' => Procedencia::orderBy('nombre')->get(),
+            'pilotos' => Piloto::orderBy('nombre')->get(),
+            'cabezales' => Cabezal::orderBy('placa')->get(),
+            'licencias' => Licencia::orderBy('numero')->get(),
+        ];
+    }
+}

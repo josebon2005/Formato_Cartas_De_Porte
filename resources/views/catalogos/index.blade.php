@@ -1,0 +1,72 @@
+@extends('layouts.app')
+
+@section('title', 'Datos')
+
+@section('content')
+    <div class="page-head">
+        <div>
+            <h1>Datos</h1>
+            <p class="subtle">Administra consignatarios, procedencias, pilotos, placas y licencias reutilizables.</p>
+        </div>
+        <div class="actions">
+            <a class="btn secondary" href="{{ route('cartas-porte.index') }}">Volver al listado</a>
+        </div>
+    </div>
+
+    @foreach ($catalogos as $key => $catalogo)
+        <section class="panel" style="margin-bottom: 18px;">
+            <div class="page-head" style="margin-bottom: 12px;">
+                <div>
+                    <h1 style="font-size: 20px;">{{ $catalogo['titulo'] }}</h1>
+                    <p class="subtle">{{ $catalogo['items']->count() }} registro(s)</p>
+                </div>
+                <div class="actions">
+                    <a class="btn accent small" href="{{ route('catalogos.create', $key) }}">Agregar nuevo dato</a>
+                </div>
+            </div>
+
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>{{ $catalogo['main_label'] }}</th>
+                            @if (isset($catalogo['extra_label']))
+                                <th>{{ $catalogo['extra_label'] }}</th>
+                            @endif
+                            <th>Cartas usadas</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse ($catalogo['items'] as $item)
+                            @php
+                                $countKey = $catalogo['relation'].'_count';
+                            @endphp
+                            <tr>
+                                <td>{{ $item->{$catalogo['main']} }}</td>
+                                @if (isset($catalogo['extra_label']))
+                                    <td>{{ $item->descripcion }}</td>
+                                @endif
+                                <td>{{ $item->{$countKey} }}</td>
+                                <td>
+                                    <div class="actions">
+                                        <a class="btn secondary small" href="{{ route('catalogos.edit', [$key, $item]) }}">Editar</a>
+                                        <form method="POST" action="{{ route('catalogos.destroy', [$key, $item]) }}" onsubmit="return confirm('Eliminar este registro de datos?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button class="btn danger small" type="submit">Eliminar</button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="{{ isset($catalogo['extra_label']) ? 4 : 3 }}" class="empty">No hay registros en este apartado.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    @endforeach
+@endsection
