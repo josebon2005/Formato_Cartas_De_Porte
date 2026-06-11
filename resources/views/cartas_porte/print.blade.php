@@ -288,6 +288,7 @@
             12 => 'Diciembre',
         ];
         $monthName = $cartaPorte->fecha ? $monthNames[(int) $cartaPorte->fecha->format('n')] : '';
+        $copies = 3;
     @endphp
 
     <div class="screen-actions">
@@ -296,8 +297,8 @@
         <a class="btn secondary" href="{{ route('cartas-porte.show', $cartaPorte) }}">Volver</a>
     </div>
 
-    @for ($copy = 1; $copy <= 2; $copy++)
-        <section class="sheet {{ $copy === 1 ? 'copy-break' : '' }}">
+    @for ($copy = 1; $copy <= $copies; $copy++)
+        <section class="sheet {{ $copy < $copies ? 'copy-break' : '' }}">
             @if (file_exists(public_path('images/logo-empresa.png')))
                 <img class="watermark" src="{{ asset('images/logo-empresa.png') }}" alt="">
             @endif

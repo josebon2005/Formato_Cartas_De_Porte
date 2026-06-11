@@ -28,7 +28,7 @@ class ExampleTest extends TestCase
         $response->assertStatus(200);
     }
 
-    public function test_carta_porte_can_be_created_and_prints_two_copies_without_duplicate_record(): void
+    public function test_carta_porte_can_be_created_and_prints_three_copies_without_duplicate_record(): void
     {
         $this->actingAs(User::factory()->create());
 
@@ -44,7 +44,7 @@ class ExampleTest extends TestCase
         $print = $this->get(route('cartas-porte.imprimir', $carta));
 
         $print->assertOk();
-        $this->assertSame(2, substr_count($print->getContent(), '"CARTA DE PORTE"'));
+        $this->assertSame(3, substr_count($print->getContent(), '"CARTA DE PORTE"'));
         $this->assertDatabaseCount('cartas_porte', 1);
     }
 
@@ -156,7 +156,7 @@ class ExampleTest extends TestCase
 
     public function test_catalog_entries_can_be_edited_and_unused_entries_deleted(): void
     {
-        $this->test_carta_porte_can_be_created_and_prints_two_copies_without_duplicate_record();
+        $this->test_carta_porte_can_be_created_and_prints_three_copies_without_duplicate_record();
 
         $this->post(route('catalogos.store', 'procedencias'), [
             'nombre' => 'Procedencia nueva',
