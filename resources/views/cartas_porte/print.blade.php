@@ -336,12 +336,12 @@
 
             <div class="row one">
                 <span class="label">Consignatario:</span>
-                <span class="line">{{ $cartaPorte->consignatario?->nombre }}</span>
+                <span class="line">{{ $cartaPorte->consignatario_texto }}</span>
             </div>
 
             <div class="row two">
                 <span class="label">Procedencia</span>
-                <span class="line">{{ $cartaPorte->procedencia?->nombre }}</span>
+                <span class="line">{{ $cartaPorte->procedencia_texto }}</span>
                 <span class="label">Destino</span>
                 <span class="line">{{ $cartaPorte->destino }}</span>
             </div>
@@ -426,9 +426,9 @@
                 </thead>
                 <tbody>
                     <tr>
-                        <td>{{ $cartaPorte->piloto?->nombre }}</td>
-                        <td>{{ $cartaPorte->cabezal?->placa }}</td>
-                        <td>{{ $cartaPorte->licencia?->numero }}</td>
+                        <td>{{ $cartaPorte->piloto_texto }}</td>
+                        <td>{{ $cartaPorte->cabezal_texto }}</td>
+                        <td>{{ $cartaPorte->licencia_texto }}</td>
                     </tr>
                 </tbody>
             </table>

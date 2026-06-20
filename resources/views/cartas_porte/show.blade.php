@@ -19,8 +19,8 @@
     <section class="panel">
         <div class="detail-grid">
             <div class="detail"><strong>Fecha</strong>{{ $cartaPorte->fecha?->format('d/m/Y') }}</div>
-            <div class="detail"><strong>Consignatario</strong>{{ $cartaPorte->consignatario?->nombre }}</div>
-            <div class="detail"><strong>Procedencia</strong>{{ $cartaPorte->procedencia?->nombre }}</div>
+            <div class="detail"><strong>Consignatario</strong>{{ $cartaPorte->consignatario_texto }}</div>
+            <div class="detail"><strong>Procedencia</strong>{{ $cartaPorte->procedencia_texto }}</div>
             <div class="detail"><strong>Destino</strong>{{ $cartaPorte->destino }}</div>
             <div class="detail"><strong>Poliza</strong>{{ $cartaPorte->poliza }}</div>
             <div class="detail"><strong>ID</strong>{{ $cartaPorte->id_documento }}</div>
@@ -35,9 +35,9 @@
             <div class="detail"><strong>Vapor</strong>{{ $cartaPorte->vapor }}</div>
             <div class="detail"><strong>Fecha vapor</strong>{{ $cartaPorte->fecha_vapor?->format('d/m/Y') }}</div>
             <div class="detail"><strong>B/L</strong>{{ $cartaPorte->bl }}</div>
-            <div class="detail"><strong>Piloto</strong>{{ $cartaPorte->piloto?->nombre }}</div>
-            <div class="detail"><strong>Cabezal placas</strong>{{ $cartaPorte->cabezal?->placa }}</div>
-            <div class="detail"><strong>Licencia</strong>{{ $cartaPorte->licencia?->numero }}</div>
+            <div class="detail"><strong>Piloto</strong>{{ $cartaPorte->piloto_texto }}</div>
+            <div class="detail"><strong>Cabezal placas</strong>{{ $cartaPorte->cabezal_texto }}</div>
+            <div class="detail"><strong>Licencia</strong>{{ $cartaPorte->licencia_texto }}</div>
         </div>
     </section>
 @endsection

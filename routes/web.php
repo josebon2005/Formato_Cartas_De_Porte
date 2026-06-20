@@ -14,6 +14,7 @@ Route::middleware('auth')->group(function () {
     Route::get('catalogos', [CatalogoController::class, 'index'])->name('catalogos.index');
     Route::get('catalogos/{catalogo}/crear', [CatalogoController::class, 'create'])->name('catalogos.create');
     Route::post('catalogos/{catalogo}', [CatalogoController::class, 'store'])->name('catalogos.store');
+    Route::post('catalogos/{catalogo}/rapido', [CatalogoController::class, 'quickStore'])->name('catalogos.quick-store');
     Route::get('catalogos/{catalogo}/{id}/editar', [CatalogoController::class, 'edit'])->name('catalogos.edit');
     Route::put('catalogos/{catalogo}/{id}', [CatalogoController::class, 'update'])->name('catalogos.update');
     Route::delete('catalogos/{catalogo}/{id}', [CatalogoController::class, 'destroy'])->name('catalogos.destroy');

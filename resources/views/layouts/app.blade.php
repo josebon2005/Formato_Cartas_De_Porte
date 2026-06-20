@@ -4,6 +4,17 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('title', 'Cartas de Porte')</title>
+    <script>
+        (() => {
+            try {
+                if (localStorage.getItem('theme') === 'dark') {
+                    document.documentElement.classList.add('dark-mode');
+                }
+            } catch (error) {
+                // localStorage may be unavailable in private or restricted browser modes.
+            }
+        })();
+    </script>
     <style>
         :root {
             --ink: #171316;
@@ -15,14 +26,39 @@
             --accent-dark: #9f111a;
             --danger: #b42318;
             --white: #fff;
+            --body-bg: #f1f2f4;
+            --surface: #fff;
+            --surface-soft: #f7f7f8;
+            --text: #111827;
+            --label: #344054;
+            --field-bg: #fff;
+            --field-border: #cbd5e1;
+            --table-head: #171316;
+            --shadow: 0 10px 28px rgba(17, 24, 39, .06);
+        }
+
+        html.dark-mode {
+            --muted: #a4acba;
+            --line: #343a46;
+            --soft: #20242c;
+            --white: #161a22;
+            --body-bg: #101217;
+            --surface: #171b23;
+            --surface-soft: #20242c;
+            --text: #eef2f7;
+            --label: #d7dce5;
+            --field-bg: #10141b;
+            --field-border: #485160;
+            --table-head: #25090d;
+            --shadow: 0 14px 32px rgba(0, 0, 0, .34);
         }
 
         * { box-sizing: border-box; }
 
         body {
             margin: 0;
-            background: #f1f2f4;
-            color: #111827;
+            background: var(--body-bg);
+            color: var(--text);
             font-family: Arial, Helvetica, sans-serif;
             font-size: 14px;
         }
@@ -41,6 +77,7 @@
         .topbar-inner {
             align-items: center;
             display: flex;
+            gap: 16px;
             justify-content: space-between;
             margin: 0 auto;
             max-width: 1180px;
@@ -96,10 +133,10 @@
         .subtle { color: var(--muted); margin: 0; }
 
         .panel {
-            background: var(--white);
+            background: var(--surface);
             border: 1px solid var(--line);
             border-radius: 8px;
-            box-shadow: 0 10px 28px rgba(17, 24, 39, .06);
+            box-shadow: var(--shadow);
             padding: 20px;
         }
 
@@ -120,17 +157,17 @@
         .span-3 { grid-column: span 3; }
 
         label {
-            color: #344054;
+            color: var(--label);
             display: block;
             font-weight: 700;
             margin-bottom: 6px;
         }
 
         input, textarea, select {
-            background: var(--white);
-            border: 1px solid #cbd5e1;
+            background: var(--field-bg);
+            border: 1px solid var(--field-border);
             border-radius: 6px;
-            color: #111827;
+            color: var(--text);
             font: inherit;
             min-height: 40px;
             padding: 9px 10px;
@@ -158,8 +195,8 @@
         }
 
         .catalog-suggestions {
-            background: var(--white);
-            border: 1px solid #cbd5e1;
+            background: var(--surface);
+            border: 1px solid var(--field-border);
             border-radius: 6px;
             box-shadow: 0 12px 24px rgba(17, 24, 39, .14);
             display: none;
@@ -177,10 +214,10 @@
         }
 
         .catalog-suggestion {
-            background: var(--white);
+            background: var(--surface);
             border: 0;
             border-bottom: 1px solid var(--line);
-            color: #111827;
+            color: var(--text);
             cursor: pointer;
             display: block;
             font: inherit;
@@ -191,7 +228,7 @@
 
         .catalog-suggestion:hover,
         .catalog-suggestion:focus {
-            background: #f7f7f8;
+            background: var(--surface-soft);
             outline: none;
         }
 
@@ -216,9 +253,9 @@
         }
 
         .btn.secondary {
-            background: var(--white);
-            border-color: #cbd5e1;
-            color: #111827;
+            background: var(--surface);
+            border-color: var(--field-border);
+            color: var(--text);
         }
 
         .btn.accent {
@@ -269,7 +306,7 @@
         }
 
         th {
-            background: #171316;
+            background: var(--table-head);
             color: #fff;
             font-size: 12px;
             text-transform: uppercase;
@@ -315,10 +352,30 @@
         }
 
         .detail {
-            background: var(--soft);
+            background: var(--surface-soft);
             border: 1px solid var(--line);
             border-radius: 6px;
             padding: 12px;
+        }
+
+        html.dark-mode .brand-logo {
+            background: #fff;
+        }
+
+        html.dark-mode .alert {
+            background: #0e2b20;
+            border-color: #1b694c;
+            color: #86efac;
+        }
+
+        html.dark-mode .alert.danger {
+            background: #321315;
+            border-color: #743236;
+            color: #fca5a5;
+        }
+
+        .theme-toggle {
+            min-width: 118px;
         }
 
         .detail strong {
@@ -332,12 +389,30 @@
         .pagination { margin-top: 18px; }
 
         @media (max-width: 900px) {
+            .topbar-inner { align-items: flex-start; flex-direction: column; }
             .filters, .grid, .detail-grid { grid-template-columns: 1fr; }
             .span-2, .span-3 { grid-column: auto; }
             .page-head { display: block; }
             .page-head .actions { margin-top: 12px; }
             table { min-width: 820px; }
             .table-wrap { overflow-x: auto; }
+        }
+
+        @media print {
+            html.dark-mode,
+            html.dark-mode body {
+                background: #fff;
+                color: #000;
+            }
+
+            html.dark-mode .panel,
+            html.dark-mode .detail,
+            html.dark-mode input,
+            html.dark-mode textarea,
+            html.dark-mode select {
+                background: #fff;
+                color: #000;
+            }
         }
     </style>
 </head>
@@ -355,6 +430,7 @@
                     <a class="btn secondary small" href="{{ route('cartas-porte.index') }}">Listado</a>
                     <a class="btn secondary small" href="{{ route('catalogos.index') }}">Datos</a>
                     <a class="btn accent small" href="{{ route('cartas-porte.create') }}">Nueva carta</a>
+                    <button class="btn secondary small theme-toggle" type="button" data-theme-toggle>Modo oscuro</button>
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
                         <button class="btn secondary small" type="submit">Salir</button>
@@ -378,5 +454,33 @@
 
     @yield('scripts')
     @stack('scripts')
+    <script>
+        (() => {
+            const toggle = document.querySelector('[data-theme-toggle]');
+            const root = document.documentElement;
+
+            if (!toggle) {
+                return;
+            }
+
+            const updateLabel = () => {
+                toggle.textContent = root.classList.contains('dark-mode') ? 'Modo claro' : 'Modo oscuro';
+            };
+
+            toggle.addEventListener('click', () => {
+                root.classList.toggle('dark-mode');
+
+                try {
+                    localStorage.setItem('theme', root.classList.contains('dark-mode') ? 'dark' : 'light');
+                } catch (error) {
+                    // The visual toggle should still work even if storage is unavailable.
+                }
+
+                updateLabel();
+            });
+
+            updateLabel();
+        })();
+    </script>
 </body>
 </html>

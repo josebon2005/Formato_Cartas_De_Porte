@@ -12,7 +12,9 @@ class CartaPorte extends Model
         'numero_correlativo',
         'fecha',
         'consignatario_id',
+        'consignatario_nombre',
         'procedencia_id',
+        'procedencia_nombre',
         'destino',
         'poliza',
         'id_documento',
@@ -28,8 +30,11 @@ class CartaPorte extends Model
         'fecha_vapor',
         'bl',
         'piloto_id',
+        'piloto_nombre',
         'cabezal_id',
+        'cabezal_placa',
         'licencia_id',
+        'licencia_numero',
     ];
 
     protected $casts = [
@@ -60,5 +65,30 @@ class CartaPorte extends Model
     public function licencia()
     {
         return $this->belongsTo(Licencia::class);
+    }
+
+    public function getConsignatarioTextoAttribute(): ?string
+    {
+        return $this->consignatario_nombre ?: $this->consignatario?->nombre;
+    }
+
+    public function getProcedenciaTextoAttribute(): ?string
+    {
+        return $this->procedencia_nombre ?: $this->procedencia?->nombre;
+    }
+
+    public function getPilotoTextoAttribute(): ?string
+    {
+        return $this->piloto_nombre ?: $this->piloto?->nombre;
+    }
+
+    public function getCabezalTextoAttribute(): ?string
+    {
+        return $this->cabezal_placa ?: $this->cabezal?->placa;
+    }
+
+    public function getLicenciaTextoAttribute(): ?string
+    {
+        return $this->licencia_numero ?: $this->licencia?->numero;
     }
 }

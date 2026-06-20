@@ -38,12 +38,16 @@ class ExampleTest extends TestCase
 
         $response->assertRedirect(route('cartas-porte.imprimir', [$carta, 'autoprint' => 1]));
         $this->assertDatabaseCount('cartas_porte', 1);
-        $this->assertDatabaseHas('consignatarios', ['nombre' => 'Cliente de Prueba']);
-        $this->assertDatabaseHas('pilotos', ['nombre' => 'Piloto de Prueba']);
+        $this->assertDatabaseMissing('consignatarios', ['nombre' => 'Cliente de Prueba']);
+        $this->assertDatabaseMissing('pilotos', ['nombre' => 'Piloto de Prueba']);
+        $this->assertSame('Cliente de Prueba', $carta->consignatario_nombre);
+        $this->assertSame('Piloto de Prueba', $carta->piloto_nombre);
 
         $print = $this->get(route('cartas-porte.imprimir', $carta));
 
         $print->assertOk();
+        $print->assertSee('Cliente de Prueba');
+        $print->assertSee('Piloto de Prueba');
         $this->assertSame(3, substr_count($print->getContent(), '"CARTA DE PORTE"'));
         $this->assertDatabaseCount('cartas_porte', 1);
     }
@@ -91,18 +95,19 @@ class ExampleTest extends TestCase
         $this->assertDatabaseHas('cartas_porte', [
             'id' => $original->id,
             'numero_correlativo' => 1,
-            'consignatario_id' => $original->consignatario_id,
+            'consignatario_nombre' => 'Cliente de Prueba',
             'contenedor' => 'CONT-001',
         ]);
         $this->assertDatabaseHas('cartas_porte', [
             'numero_correlativo' => 2,
+            'consignatario_nombre' => 'Cliente Nuevo',
             'poliza' => 'POL-001',
             'bl' => 'BL-001',
             'contenido' => 'Mercaderia general',
             'peso_kls' => '1500',
             'contenedor' => 'CONT-002',
         ]);
-        $this->assertDatabaseHas('consignatarios', ['nombre' => 'Cliente Nuevo']);
+        $this->assertDatabaseMissing('consignatarios', ['nombre' => 'Cliente Nuevo']);
     }
 
     public function test_pilotos_propios_seeder_loads_license_and_usual_plate(): void
@@ -125,8 +130,10 @@ class ExampleTest extends TestCase
     {
         $this->actingAs(User::factory()->create());
         $this->seed(PilotosPropiosSeeder::class);
+        $piloto = Piloto::where('nombre', 'ENRIQUE MANOLO REYES ORELLANA')->firstOrFail();
 
         $this->post(route('cartas-porte.store'), $this->cartaPayload([
+            'piloto_id' => $piloto->id,
             'piloto_nombre' => 'ENRIQUE MANOLO REYES ORELLANA',
             'cabezal_placa' => 'C-999ZZZ',
             'licencia_numero' => 'LIC-MANUAL',
@@ -135,10 +142,14 @@ class ExampleTest extends TestCase
         $carta = CartaPorte::firstOrFail();
 
         $this->assertSame('ENRIQUE MANOLO REYES ORELLANA', $carta->piloto->nombre);
-        $this->assertSame('C-999ZZZ', $carta->cabezal->placa);
-        $this->assertSame('LIC-MANUAL', $carta->licencia->numero);
+        $this->assertNull($carta->cabezal);
+        $this->assertNull($carta->licencia);
+        $this->assertSame('C-999ZZZ', $carta->cabezal_placa);
+        $this->assertSame('LIC-MANUAL', $carta->licencia_numero);
         $this->assertDatabaseHas('cabezales', ['placa' => 'C-491BXM']);
         $this->assertDatabaseHas('licencias', ['numero' => '3918 86266 1801']);
+        $this->assertDatabaseMissing('cabezales', ['placa' => 'C-999ZZZ']);
+        $this->assertDatabaseMissing('licencias', ['numero' => 'LIC-MANUAL']);
     }
 
     public function test_create_form_includes_victor_in_driver_suggestions(): void
@@ -156,7 +167,7 @@ class ExampleTest extends TestCase
 
     public function test_catalog_entries_can_be_edited_and_unused_entries_deleted(): void
     {
-        $this->test_carta_porte_can_be_created_and_prints_three_copies_without_duplicate_record();
+        $this->actingAs(User::factory()->create());
 
         $this->post(route('catalogos.store', 'procedencias'), [
             'nombre' => 'Procedencia nueva',
@@ -164,7 +175,11 @@ class ExampleTest extends TestCase
 
         $this->assertDatabaseHas('procedencias', ['nombre' => 'Procedencia nueva']);
 
-        $consignatario = Consignatario::firstOrFail();
+        $this->postJson(route('catalogos.quick-store', 'consignatarios'), [
+            'nombre' => 'Cliente de Prueba',
+        ])->assertOk()->assertJsonPath('value', 'Cliente de Prueba');
+
+        $consignatario = Consignatario::where('nombre', 'Cliente de Prueba')->firstOrFail();
 
         $this->put(route('catalogos.update', ['consignatarios', $consignatario]), [
             'nombre' => 'Cliente Actualizado',
@@ -172,10 +187,18 @@ class ExampleTest extends TestCase
 
         $this->assertDatabaseHas('consignatarios', ['nombre' => 'Cliente Actualizado']);
 
+        $this->post(route('cartas-porte.store'), $this->cartaPayload([
+            'consignatario_id' => $consignatario->id,
+            'consignatario_nombre' => 'Cliente Actualizado',
+        ]))->assertRedirect();
+
         $this->delete(route('catalogos.destroy', ['consignatarios', $consignatario]))
             ->assertRedirect(route('catalogos.index'));
 
-        $this->assertDatabaseHas('consignatarios', ['nombre' => 'Cliente Actualizado']);
+        $this->assertDatabaseMissing('consignatarios', ['nombre' => 'Cliente Actualizado']);
+        $carta = CartaPorte::firstOrFail()->fresh();
+        $this->assertNull($carta->consignatario_id);
+        $this->assertSame('Cliente Actualizado', $carta->consignatario_nombre);
 
         $pilotoLibre = Piloto::create(['nombre' => 'Piloto Libre']);
 

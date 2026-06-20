@@ -22,7 +22,11 @@ class CartaPorteController extends Controller
             ->with(['consignatario', 'procedencia', 'piloto'])
             ->when($request->filled('fecha'), fn ($query) => $query->whereDate('fecha', $request->fecha))
             ->when($request->filled('consignatario'), function ($query) use ($request) {
-                $query->whereHas('consignatario', fn ($subQuery) => $subQuery->where('nombre', 'like', '%'.$request->consignatario.'%'));
+                $query->where(function ($subQuery) use ($request) {
+                    $subQuery
+                        ->where('consignatario_nombre', 'like', '%'.$request->consignatario.'%')
+                        ->orWhereHas('consignatario', fn ($catalogQuery) => $catalogQuery->where('nombre', 'like', '%'.$request->consignatario.'%'));
+                });
             })
             ->when($request->filled('bl'), fn ($query) => $query->where('bl', 'like', '%'.$request->bl.'%'))
             ->when($request->filled('poliza'), fn ($query) => $query->where('poliza', 'like', '%'.$request->poliza.'%'))
@@ -154,13 +158,15 @@ class CartaPorteController extends Controller
             'licencia_numero' => ['required_without:licencia_id', 'nullable', 'string', 'max:255'],
         ]);
 
-        $pilotoId = $this->resolveCatalog(Piloto::class, 'nombre', $validated['piloto_id'] ?? null, $validated['piloto_nombre'] ?? null);
+        $pilotoId = $this->catalogId($validated['piloto_id'] ?? null);
 
         return [
             'numero_correlativo' => $validated['numero_correlativo'],
             'fecha' => $validated['fecha'],
-            'consignatario_id' => $this->resolveCatalog(Consignatario::class, 'nombre', $validated['consignatario_id'] ?? null, $validated['consignatario_nombre'] ?? null),
-            'procedencia_id' => $this->resolveCatalog(Procedencia::class, 'nombre', $validated['procedencia_id'] ?? null, $validated['procedencia_nombre'] ?? null),
+            'consignatario_id' => $this->catalogId($validated['consignatario_id'] ?? null),
+            'consignatario_nombre' => $this->catalogText($validated['consignatario_nombre'] ?? null),
+            'procedencia_id' => $this->catalogId($validated['procedencia_id'] ?? null),
+            'procedencia_nombre' => $this->catalogText($validated['procedencia_nombre'] ?? null),
             'destino' => $validated['destino'] ?? null,
             'poliza' => $validated['poliza'] ?? null,
             'id_documento' => $validated['id_documento'] ?? null,
@@ -176,20 +182,24 @@ class CartaPorteController extends Controller
             'fecha_vapor' => $validated['fecha_vapor'] ?? null,
             'bl' => $validated['bl'] ?? null,
             'piloto_id' => $pilotoId,
-            'cabezal_id' => $this->resolveCatalog(Cabezal::class, 'placa', $validated['cabezal_id'] ?? null, $validated['cabezal_placa'] ?? null),
-            'licencia_id' => $this->resolveCatalog(Licencia::class, 'numero', $validated['licencia_id'] ?? null, $validated['licencia_numero'] ?? null, ['piloto_id' => $pilotoId]),
+            'piloto_nombre' => $this->catalogText($validated['piloto_nombre'] ?? null),
+            'cabezal_id' => $this->catalogId($validated['cabezal_id'] ?? null),
+            'cabezal_placa' => $this->catalogText($validated['cabezal_placa'] ?? null),
+            'licencia_id' => $this->catalogId($validated['licencia_id'] ?? null),
+            'licencia_numero' => $this->catalogText($validated['licencia_numero'] ?? null),
         ];
     }
 
-    private function resolveCatalog(string $modelClass, string $column, ?string $id, ?string $value, array $extra = []): int
+    private function catalogId(?string $id): ?int
     {
-        if ($id) {
-            return (int) $id;
-        }
+        return $id ? (int) $id : null;
+    }
 
+    private function catalogText(?string $value): ?string
+    {
         $value = trim((string) $value);
 
-        return $modelClass::firstOrCreate([$column => $value], $extra)->id;
+        return $value !== '' ? $value : null;
     }
 
     private function nextCorrelativo(): int
@@ -207,7 +217,9 @@ class CartaPorteController extends Controller
         if ($base) {
             $data += [
                 'consignatario_id' => $base->consignatario_id,
+                'consignatario_nombre' => $base->consignatario_texto,
                 'procedencia_id' => $base->procedencia_id,
+                'procedencia_nombre' => $base->procedencia_texto,
                 'destino' => $base->destino,
                 'poliza' => $base->poliza,
                 'id_documento' => $base->id_documento,
@@ -222,8 +234,11 @@ class CartaPorteController extends Controller
                 'fecha_vapor' => $base->fecha_vapor,
                 'bl' => $base->bl,
                 'piloto_id' => $base->piloto_id,
+                'piloto_nombre' => $base->piloto_texto,
                 'cabezal_id' => $base->cabezal_id,
+                'cabezal_placa' => $base->cabezal_texto,
                 'licencia_id' => $base->licencia_id,
+                'licencia_numero' => $base->licencia_texto,
             ];
         }
 

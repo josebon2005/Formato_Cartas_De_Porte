@@ -56,11 +56,11 @@
                         <tr>
                             <td>{{ $carta->numero_correlativo }}</td>
                             <td>{{ $carta->fecha?->format('d/m/Y') }}</td>
-                            <td>{{ $carta->consignatario?->nombre }}</td>
-                            <td>{{ $carta->procedencia?->nombre }}</td>
+                            <td>{{ $carta->consignatario_texto }}</td>
+                            <td>{{ $carta->procedencia_texto }}</td>
                             <td>{{ $carta->bl }}</td>
                             <td>{{ $carta->poliza }}</td>
-                            <td>{{ $carta->piloto?->nombre }}</td>
+                            <td>{{ $carta->piloto_texto }}</td>
                             <td>
                                 <div class="actions">
                                     <a class="btn secondary small" href="{{ route('cartas-porte.show', $carta) }}">Ver</a>

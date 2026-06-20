@@ -37,9 +37,9 @@
     <div class="span-2 catalog-field">
         <label for="consignatario_nombre">Consignatario</label>
         <div class="catalog-input">
-            <input id="consignatario_nombre" name="consignatario_nombre" required value="{{ old('consignatario_nombre', $cartaPorte->consignatario?->nombre) }}" autocomplete="off">
+            <input id="consignatario_nombre" name="consignatario_nombre" required value="{{ old('consignatario_nombre', $cartaPorte->consignatario_texto) }}" autocomplete="off">
             <input id="consignatario_id" name="consignatario_id" type="hidden" value="{{ old('consignatario_id', $cartaPorte->consignatario_id) }}">
-            <button class="btn secondary" type="button" onclick="markNew('consignatario_nombre', 'consignatario_id')">+ Nuevo</button>
+            <button class="btn secondary" type="button" onclick="saveCatalogItem('consignatarios', 'consignatario_nombre', 'consignatario_id', this)">Guardar en datos</button>
         </div>
         @error('consignatario_nombre') <div class="error">{{ $message }}</div> @enderror
         @error('consignatario_id') <div class="error">{{ $message }}</div> @enderror
@@ -48,9 +48,9 @@
     <div class="catalog-field">
         <label for="procedencia_nombre">Procedencia</label>
         <div class="catalog-input">
-            <input id="procedencia_nombre" name="procedencia_nombre" required value="{{ old('procedencia_nombre', $cartaPorte->procedencia?->nombre) }}" autocomplete="off">
+            <input id="procedencia_nombre" name="procedencia_nombre" required value="{{ old('procedencia_nombre', $cartaPorte->procedencia_texto) }}" autocomplete="off">
             <input id="procedencia_id" name="procedencia_id" type="hidden" value="{{ old('procedencia_id', $cartaPorte->procedencia_id) }}">
-            <button class="btn secondary" type="button" onclick="markNew('procedencia_nombre', 'procedencia_id')">+ Nuevo</button>
+            <button class="btn secondary" type="button" onclick="saveCatalogItem('procedencias', 'procedencia_nombre', 'procedencia_id', this)">Guardar en datos</button>
         </div>
         @error('procedencia_nombre') <div class="error">{{ $message }}</div> @enderror
         @error('procedencia_id') <div class="error">{{ $message }}</div> @enderror
@@ -127,9 +127,9 @@
     <div class="catalog-field">
         <label for="piloto_nombre">Piloto</label>
         <div class="catalog-input">
-            <input id="piloto_nombre" name="piloto_nombre" required value="{{ old('piloto_nombre', $cartaPorte->piloto?->nombre) }}" placeholder="Escriba o seleccione un piloto" autocomplete="off">
+            <input id="piloto_nombre" name="piloto_nombre" required value="{{ old('piloto_nombre', $cartaPorte->piloto_texto) }}" placeholder="Escriba o seleccione un piloto" autocomplete="off">
             <input id="piloto_id" name="piloto_id" type="hidden" value="{{ old('piloto_id', $cartaPorte->piloto_id) }}">
-            <button class="btn secondary" type="button" onclick="markNew('piloto_nombre', 'piloto_id')">+ Nuevo</button>
+            <button class="btn secondary" type="button" onclick="saveCatalogItem('pilotos', 'piloto_nombre', 'piloto_id', this)">Guardar en datos</button>
         </div>
         <div class="field-help">Se autocompleta si el piloto esta registrado, pero puede editarse manualmente.</div>
         @error('piloto_nombre') <div class="error">{{ $message }}</div> @enderror
@@ -139,9 +139,9 @@
     <div class="catalog-field">
         <label for="cabezal_placa">Cabezal placas</label>
         <div class="catalog-input">
-            <input id="cabezal_placa" name="cabezal_placa" required value="{{ old('cabezal_placa', $cartaPorte->cabezal?->placa) }}" autocomplete="off">
+            <input id="cabezal_placa" name="cabezal_placa" required value="{{ old('cabezal_placa', $cartaPorte->cabezal_texto) }}" autocomplete="off">
             <input id="cabezal_id" name="cabezal_id" type="hidden" value="{{ old('cabezal_id', $cartaPorte->cabezal_id) }}">
-            <button class="btn secondary" type="button" onclick="markNew('cabezal_placa', 'cabezal_id')">+ Nuevo</button>
+            <button class="btn secondary" type="button" onclick="saveCatalogItem('cabezales', 'cabezal_placa', 'cabezal_id', this)">Guardar en datos</button>
         </div>
         @error('cabezal_placa') <div class="error">{{ $message }}</div> @enderror
         @error('cabezal_id') <div class="error">{{ $message }}</div> @enderror
@@ -150,9 +150,9 @@
     <div class="catalog-field">
         <label for="licencia_numero">Licencia</label>
         <div class="catalog-input">
-            <input id="licencia_numero" name="licencia_numero" required value="{{ old('licencia_numero', $cartaPorte->licencia?->numero) }}" autocomplete="off">
+            <input id="licencia_numero" name="licencia_numero" required value="{{ old('licencia_numero', $cartaPorte->licencia_texto) }}" autocomplete="off">
             <input id="licencia_id" name="licencia_id" type="hidden" value="{{ old('licencia_id', $cartaPorte->licencia_id) }}">
-            <button class="btn secondary" type="button" onclick="markNew('licencia_numero', 'licencia_id')">+ Nuevo</button>
+            <button class="btn secondary" type="button" onclick="saveCatalogItem('licencias', 'licencia_numero', 'licencia_id', this)">Guardar en datos</button>
         </div>
         @error('licencia_numero') <div class="error">{{ $message }}</div> @enderror
         @error('licencia_id') <div class="error">{{ $message }}</div> @enderror
@@ -172,6 +172,33 @@
             piloto: @json($catalogoPilotos, JSON_UNESCAPED_UNICODE),
             cabezal: @json($cabezales->map(fn ($item) => ['id' => $item->id, 'value' => $item->placa])->values()),
             licencia: @json($licencias->map(fn ($item) => ['id' => $item->id, 'value' => $item->numero])->values()),
+        };
+        const quickCatalogs = {
+            consignatarios: {
+                key: 'consignatario',
+                column: 'nombre',
+                url: @json(route('catalogos.quick-store', 'consignatarios')),
+            },
+            procedencias: {
+                key: 'procedencia',
+                column: 'nombre',
+                url: @json(route('catalogos.quick-store', 'procedencias')),
+            },
+            pilotos: {
+                key: 'piloto',
+                column: 'nombre',
+                url: @json(route('catalogos.quick-store', 'pilotos')),
+            },
+            cabezales: {
+                key: 'cabezal',
+                column: 'placa',
+                url: @json(route('catalogos.quick-store', 'cabezales')),
+            },
+            licencias: {
+                key: 'licencia',
+                column: 'numero',
+                url: @json(route('catalogos.quick-store', 'licencias')),
+            },
         };
 
         function normalizeCatalogValue(value) {
@@ -281,11 +308,67 @@
             sync(false);
         }
 
-        function markNew(inputId, hiddenId) {
-            document.getElementById(hiddenId).value = '';
+        async function saveCatalogItem(catalogName, inputId, hiddenId, button) {
+            const config = quickCatalogs[catalogName];
             const input = document.getElementById(inputId);
-            input.focus();
-            input.select();
+            const hidden = document.getElementById(hiddenId);
+            const value = input.value.trim();
+
+            if (!config || !input || !hidden || value === '') {
+                alert('Escriba un valor antes de guardarlo en datos.');
+                return;
+            }
+
+            const originalText = button?.textContent;
+
+            if (button) {
+                button.disabled = true;
+                button.textContent = 'Guardando...';
+            }
+
+            try {
+                const response = await fetch(config.url, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': @json(csrf_token()),
+                    },
+                    body: JSON.stringify({ [config.column]: value }),
+                });
+
+                const payload = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(payload.message || 'No se pudo guardar el dato.');
+                }
+
+                const item = {
+                    id: payload.id,
+                    value: payload.value,
+                    licencia: null,
+                    cabezal: null,
+                };
+                const items = catalogos[config.key];
+                const existingIndex = items.findIndex(existing => Number(existing.id) === Number(item.id));
+
+                if (existingIndex >= 0) {
+                    items[existingIndex] = { ...items[existingIndex], ...item };
+                } else {
+                    items.push(item);
+                }
+
+                input.value = payload.value;
+                hidden.value = payload.id;
+                alert(payload.message || 'Dato guardado.');
+            } catch (error) {
+                alert(error.message);
+            } finally {
+                if (button) {
+                    button.disabled = false;
+                    button.textContent = originalText;
+                }
+            }
         }
 
         function setCatalogValue(inputId, hiddenId, item) {

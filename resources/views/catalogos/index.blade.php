@@ -59,7 +59,7 @@
                                 <td>
                                     <div class="actions">
                                         <a class="btn secondary small" href="{{ route('catalogos.edit', [$key, $item]) }}">Editar</a>
-                                        <form method="POST" action="{{ route('catalogos.destroy', [$key, $item]) }}" onsubmit="return confirm('Eliminar este registro de datos?');">
+                                        <form method="POST" action="{{ route('catalogos.destroy', [$key, $item]) }}" onsubmit="return confirm('Este dato se eliminara de la lista para futuras cartas, pero las cartas ya creadas conservaran la informacion registrada. Desea continuar?');">
                                             @csrf
                                             @method('DELETE')
                                             <button class="btn danger small" type="submit">Eliminar</button>

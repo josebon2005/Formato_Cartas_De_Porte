@@ -6,7 +6,7 @@
     <div class="page-head">
         <div>
             <h1>Editar {{ $config['singular'] }}</h1>
-            <p class="subtle">Al guardar, este dato actualizado se reflejara en las cartas relacionadas.</p>
+            <p class="subtle">Al guardar, este dato quedara disponible para futuras cartas. Las cartas ya creadas conservan la informacion registrada.</p>
         </div>
         <div class="actions">
             <a class="btn secondary" href="{{ route('catalogos.index') }}">Volver a datos</a>

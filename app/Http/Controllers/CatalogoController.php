@@ -64,6 +64,24 @@ class CatalogoController extends Controller
             ->with('status', $config['singular'].' agregado correctamente.');
     }
 
+    public function quickStore(Request $request, string $catalogo)
+    {
+        $config = $this->config($catalogo);
+
+        $validated = $request->validate([
+            $config['main'] => ['required', 'string', 'max:255'],
+        ]);
+
+        $value = trim($validated[$config['main']]);
+        $registro = $config['model']::firstOrCreate([$config['main'] => $value]);
+
+        return response()->json([
+            'id' => $registro->id,
+            'value' => $registro->{$config['main']},
+            'message' => $config['singular'].' guardado en datos.',
+        ]);
+    }
+
     public function update(Request $request, string $catalogo, int $id)
     {
         $config = $this->config($catalogo);
@@ -86,17 +104,11 @@ class CatalogoController extends Controller
         $config = $this->config($catalogo);
         $registro = $config['model']::findOrFail($id);
 
-        if ($this->estaEnUso($registro, $config['relation'])) {
-            return redirect()
-                ->route('catalogos.index')
-                ->with('error', 'No se puede eliminar '.$config['singular'].' porque ya esta usado en una carta de porte.');
-        }
-
         $registro->delete();
 
         return redirect()
             ->route('catalogos.index')
-            ->with('status', $config['singular'].' eliminado correctamente.');
+            ->with('status', $config['singular'].' eliminado de datos. Las cartas ya creadas conservaran la informacion registrada.');
     }
 
     private function catalogosConDatos(): array
@@ -183,11 +195,6 @@ class CatalogoController extends Controller
         return [
             'cabezales' => Cabezal::orderBy('placa')->get(),
         ];
-    }
-
-    private function estaEnUso(Model $registro, string $relation): bool
-    {
-        return $registro->{$relation}()->exists();
     }
 
     private function config(string $catalogo): array
