@@ -24,6 +24,12 @@ class PilotosPropiosSeeder extends Seeder
             ['nombre' => 'CARLOS ROMEO RAMOS VÁSQUEZ', 'licencia' => '1586 95232 2007', 'placa' => 'C-828BZX'],
             ['nombre' => 'HUGO GARCIA RAMIREZ', 'licencia' => '2501 78931 1804', 'placa' => 'C-465BBX'],
             ['nombre' => 'EDGAR RAFAEL ORTIZ VILLAFUERTE', 'licencia' => '2605 43764 0601', 'placa' => 'C-001BPP'],
+            ['nombre' => 'ALEJANDRO RAMOS RIAN', 'licencia' => '2185 28027 0502', 'placa' => 'C-962BQM'],
+            ['nombre' => 'HAMILTON JONATAN RODAS SOSA', 'licencia' => '3480 38585 0101', 'placa' => 'C-692BPQ'],
+            ['nombre' => 'GERZON NEFTALI ALVARADO VARGAS', 'licencia' => '2330 19081 1904', 'placa' => 'C-070BXZ'],
+            ['nombre' => 'CÁNDIDO JOSSEPTH MARÍN GAMBOA', 'licencia' => '2534 57181 1801', 'placa' => 'C-864BYK'],
+            ['nombre' => 'OSCAR RENE DÍAZ CORTEZ', 'licencia' => '2619 42859 1801', 'placa' => 'C-062BPM'],
+            ['nombre' => 'MIGUEL ALEXANDER CASASOLA CHO', 'licencia' => '2585 82367 1801', 'placa' => 'C-242BPC'],
         ];
 
         foreach ($pilotos as $data) {
@@ -34,8 +40,8 @@ class PilotosPropiosSeeder extends Seeder
             );
 
             Licencia::updateOrCreate(
-                ['numero' => $data['licencia']],
                 ['piloto_id' => $piloto->id],
+                ['numero' => $data['licencia']],
             );
         }
     }

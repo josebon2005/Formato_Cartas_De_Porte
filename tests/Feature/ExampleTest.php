@@ -123,7 +123,16 @@ class ExampleTest extends TestCase
 
         $this->assertSame('2672 44584 1801', $victor->licencias()->first()?->numero);
         $this->assertSame('C-110BPM', $victor->cabezalUsual?->placa);
-        $this->assertDatabaseCount('pilotos', 9);
+
+        $candido = Piloto::where('nombre', 'CÁNDIDO JOSSEPTH MARÍN GAMBOA')->firstOrFail();
+
+        $this->assertSame('2534 57181 1801', $candido->licencias()->first()?->numero);
+        $this->assertSame('C-864BYK', $candido->cabezalUsual?->placa);
+
+        $this->seed(PilotosPropiosSeeder::class);
+
+        $this->assertDatabaseCount('pilotos', 15);
+        $this->assertDatabaseCount('licencias', 15);
     }
 
     public function test_known_driver_allows_manual_license_and_plate_changes_when_saving(): void
