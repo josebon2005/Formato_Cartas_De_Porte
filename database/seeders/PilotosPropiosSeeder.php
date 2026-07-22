@@ -6,6 +6,7 @@ use App\Models\Cabezal;
 use App\Models\Licencia;
 use App\Models\Piloto;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 class PilotosPropiosSeeder extends Seeder
 {
@@ -32,17 +33,22 @@ class PilotosPropiosSeeder extends Seeder
             ['nombre' => 'MIGUEL ALEXANDER CASASOLA CHO', 'licencia' => '2585 82367 1801', 'placa' => 'C-242BPC'],
         ];
 
-        foreach ($pilotos as $data) {
-            $cabezal = Cabezal::firstOrCreate(['placa' => $data['placa']]);
-            $piloto = Piloto::updateOrCreate(
-                ['nombre' => $data['nombre']],
-                ['cabezal_id' => $cabezal->id],
-            );
+        DB::transaction(function () use ($pilotos) {
+            foreach ($pilotos as $data) {
+                $cabezal = Cabezal::firstOrCreate(
+                    ['placa' => $data['placa']],
+                );
 
-            Licencia::updateOrCreate(
-                ['piloto_id' => $piloto->id],
-                ['numero' => $data['licencia']],
-            );
-        }
+                $piloto = Piloto::updateOrCreate(
+                    ['nombre' => $data['nombre']],
+                    ['cabezal_id' => $cabezal->id],
+                );
+
+                Licencia::updateOrCreate(
+                    ['numero' => $data['licencia']],
+                    ['piloto_id' => $piloto->id],
+                );
+            }
+        });
     }
 }
