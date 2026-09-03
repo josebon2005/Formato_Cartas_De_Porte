@@ -151,6 +151,7 @@ class CatalogoController extends Controller
         if (($config['extras'] ?? null) === 'piloto_detalles') {
             $rules['licencia_numero'] = ['nullable', 'string', 'max:255'];
             $rules['cabezal_placa'] = ['nullable', 'string', 'max:255'];
+            $rules['activo'] = ['nullable', 'boolean'];
         }
 
         return $rules;
@@ -159,7 +160,7 @@ class CatalogoController extends Controller
     private function mainData(array $validated, array $config): array
     {
         return collect($validated)
-            ->only(array_filter([$config['main'], $config['extra'] ?? null]))
+            ->only(array_filter([$config['main'], $config['extra'] ?? null, ($config['extras'] ?? null) === 'piloto_detalles' ? 'activo' : null]))
             ->all();
     }
 

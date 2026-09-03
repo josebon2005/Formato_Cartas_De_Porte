@@ -6,9 +6,11 @@ use App\Models\Cabezal;
 use App\Models\CartaPorte;
 use App\Models\Consignatario;
 use App\Models\Licencia;
+use App\Models\NotaGasto;
 use App\Models\Piloto;
 use App\Models\Procedencia;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\AbstractPaginator;
 use Illuminate\Validation\Rule;
 
 class CartaPorteController extends Controller
@@ -19,7 +21,7 @@ class CartaPorteController extends Controller
     public function index(Request $request)
     {
         $cartas = CartaPorte::query()
-            ->with(['consignatario', 'procedencia', 'piloto'])
+            ->with(['consignatario:id,nombre', 'procedencia:id,nombre', 'piloto:id,nombre'])
             ->when($request->filled('fecha'), fn ($query) => $query->whereDate('fecha', $request->fecha))
             ->when($request->filled('consignatario'), function ($query) use ($request) {
                 $query->where(function ($subQuery) use ($request) {
@@ -34,6 +36,8 @@ class CartaPorteController extends Controller
             ->latest('id')
             ->paginate(12)
             ->withQueryString();
+
+        $this->attachNotasGastoOperacion($cartas);
 
         return view('cartas_porte.index', compact('cartas'));
     }
@@ -73,6 +77,7 @@ class CartaPorteController extends Controller
     public function show(CartaPorte $cartaPorte)
     {
         $cartaPorte->load(['consignatario', 'procedencia', 'piloto', 'cabezal', 'licencia']);
+        $this->attachNotasGastoOperacion(collect([$cartaPorte]));
 
         return view('cartas_porte.show', compact('cartaPorte'));
     }
@@ -255,12 +260,58 @@ class CartaPorteController extends Controller
         return $cartaPorte;
     }
 
+    private function attachNotasGastoOperacion($cartas): void
+    {
+        $collection = $cartas instanceof AbstractPaginator
+            ? $cartas->getCollection()
+            : collect($cartas);
+
+        $operaciones = $collection
+            ->filter(fn (CartaPorte $carta) => filled($carta->bl) && filled($carta->poliza))
+            ->map(fn (CartaPorte $carta) => [
+                'bl' => $carta->bl,
+                'poliza' => $carta->poliza,
+            ])
+            ->unique(fn (array $operacion) => $operacion['bl'].'|'.$operacion['poliza'])
+            ->values();
+
+        if ($operaciones->isEmpty()) {
+            return;
+        }
+
+        $notas = NotaGasto::query()
+            ->select(['id', 'bl', 'poliza', 'estado', 'fel_numero'])
+            ->where('estado', '<>', NotaGasto::ESTADO_ANULADA)
+            ->where(function ($query) use ($operaciones) {
+                foreach ($operaciones as $operacion) {
+                    $query->orWhere(function ($subQuery) use ($operacion) {
+                        $subQuery
+                            ->where('bl', $operacion['bl'])
+                            ->where('poliza', $operacion['poliza']);
+                    });
+                }
+            })
+            ->latest('id')
+            ->get()
+            ->unique(fn (NotaGasto $nota) => $nota->bl.'|'.$nota->poliza)
+            ->keyBy(fn (NotaGasto $nota) => $nota->bl.'|'.$nota->poliza);
+
+        $collection->each(function (CartaPorte $carta) use ($notas) {
+            $carta->setRelation('notaGastoOperacion', filled($carta->bl) && filled($carta->poliza)
+                ? $notas->get($carta->bl.'|'.$carta->poliza)
+                : null);
+        });
+    }
+
     private function catalogs(): array
     {
         return [
             'consignatarios' => Consignatario::orderBy('nombre')->get(),
             'procedencias' => Procedencia::orderBy('nombre')->get(),
-            'pilotos' => Piloto::with(['licencias', 'cabezalUsual'])->orderBy('nombre')->get(),
+            'pilotos' => Piloto::with(['licencias', 'cabezalUsual'])
+                ->where('activo', true)
+                ->orderBy('nombre')
+                ->get(),
             'cabezales' => Cabezal::orderBy('placa')->get(),
             'licencias' => Licencia::orderBy('numero')->get(),
         ];

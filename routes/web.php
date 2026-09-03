@@ -3,6 +3,9 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CartaPorteController;
 use App\Http\Controllers\CatalogoController;
+use App\Http\Controllers\ConceptoGastoController;
+use App\Http\Controllers\NotaGastoController;
+use App\Http\Controllers\TarifaClienteController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('login', [AuthController::class, 'showLogin'])->name('login');
@@ -18,6 +21,27 @@ Route::middleware('auth')->group(function () {
     Route::get('catalogos/{catalogo}/{id}/editar', [CatalogoController::class, 'edit'])->name('catalogos.edit');
     Route::put('catalogos/{catalogo}/{id}', [CatalogoController::class, 'update'])->name('catalogos.update');
     Route::delete('catalogos/{catalogo}/{id}', [CatalogoController::class, 'destroy'])->name('catalogos.destroy');
+
+    Route::prefix('facturacion')->name('facturacion.')->group(function () {
+        Route::get('notas-gastos/desde-carta/{cartaPorte}', [NotaGastoController::class, 'desdeCarta'])->name('notas-gastos.desde-carta');
+        Route::post('notas-gastos/desde-carta/{cartaPorte}', [NotaGastoController::class, 'storeDesdeCarta'])->name('notas-gastos.store-desde-carta');
+        Route::get('notas-gastos/{notaGasto}/imprimir', [NotaGastoController::class, 'imprimir'])->name('notas-gastos.imprimir');
+        Route::get('notas-gastos/{notaGasto}/facturar', [NotaGastoController::class, 'editFacturacion'])->name('notas-gastos.facturar');
+        Route::put('notas-gastos/{notaGasto}/facturar', [NotaGastoController::class, 'updateFacturacion'])->name('notas-gastos.facturar.update');
+        Route::put('notas-gastos/{notaGasto}/anular', [NotaGastoController::class, 'anular'])->name('notas-gastos.anular');
+        Route::resource('notas-gastos', NotaGastoController::class)
+            ->only(['index', 'show', 'edit', 'update', 'destroy'])
+            ->parameters(['notas-gastos' => 'notaGasto']);
+
+        Route::get('tarifas-clientes', [TarifaClienteController::class, 'index'])->name('tarifas-clientes.index');
+        Route::get('tarifas-clientes/{consignatario}/editar', [TarifaClienteController::class, 'edit'])->name('tarifas-clientes.edit');
+        Route::put('tarifas-clientes/{consignatario}', [TarifaClienteController::class, 'update'])->name('tarifas-clientes.update');
+
+        Route::resource('conceptos-gastos', ConceptoGastoController::class)
+            ->only(['index', 'create', 'store', 'edit', 'update', 'destroy'])
+            ->parameters(['conceptos-gastos' => 'conceptosGasto']);
+    });
+
     Route::get('cartas-porte/{cartaPorte}/imprimir', [CartaPorteController::class, 'imprimir'])->name('cartas-porte.imprimir');
     Route::resource('cartas-porte', CartaPorteController::class)->parameters([
         'cartas-porte' => 'cartaPorte',

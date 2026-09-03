@@ -26,6 +26,8 @@
             --accent-dark: #9f111a;
             --danger: #b42318;
             --white: #fff;
+            --on-dark: #fff;
+            --button-text: #fff;
             --body-bg: #f1f2f4;
             --surface: #fff;
             --surface-soft: #f7f7f8;
@@ -34,6 +36,7 @@
             --field-bg: #fff;
             --field-border: #cbd5e1;
             --table-head: #171316;
+            --table-row-hover: #fafafa;
             --shadow: 0 10px 28px rgba(17, 24, 39, .06);
         }
 
@@ -50,6 +53,7 @@
             --field-bg: #10141b;
             --field-border: #485160;
             --table-head: #25090d;
+            --table-row-hover: #1d222b;
             --shadow: 0 14px 32px rgba(0, 0, 0, .34);
         }
 
@@ -70,7 +74,7 @@
         .topbar {
             background: linear-gradient(90deg, #0f0e10 0%, #211d20 62%, #3a0b10 100%);
             border-bottom: 4px solid var(--accent);
-            color: var(--white);
+            color: var(--on-dark);
             padding: 12px 24px;
         }
 
@@ -237,7 +241,7 @@
             background: var(--ink);
             border: 1px solid var(--ink);
             border-radius: 6px;
-            color: var(--white);
+            color: var(--button-text);
             cursor: pointer;
             display: inline-flex;
             font-weight: 700;
@@ -261,6 +265,7 @@
         .btn.accent {
             background: var(--accent);
             border-color: var(--accent);
+            color: var(--button-text);
         }
 
         .btn.accent:hover {
@@ -268,14 +273,40 @@
             border-color: var(--accent-dark);
         }
 
+        .btn.warning {
+            background: #f59e0b;
+            border-color: #d97706;
+            color: #111827;
+        }
+
+        .btn.warning:hover {
+            background: #d97706;
+            border-color: #b45309;
+            color: #111827;
+        }
+
+        .btn.success {
+            background: #067647;
+            border-color: #067647;
+            color: var(--button-text);
+        }
+
         .btn.danger {
             background: var(--danger);
             border-color: var(--danger);
+            color: var(--button-text);
         }
 
         .btn.small {
             min-height: 34px;
             padding: 7px 10px;
+        }
+
+        .btn.disabled,
+        .btn:disabled {
+            cursor: not-allowed;
+            opacity: .62;
+            pointer-events: none;
         }
 
         .actions {
@@ -305,6 +336,10 @@
             vertical-align: top;
         }
 
+        tbody tr:hover {
+            background: var(--table-row-hover);
+        }
+
         th {
             background: var(--table-head);
             color: #fff;
@@ -316,6 +351,35 @@
             color: var(--muted);
             padding: 24px;
             text-align: center;
+        }
+
+        .status-badge {
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            display: inline-flex;
+            font-size: 12px;
+            font-weight: 800;
+            padding: 4px 9px;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .status-badge.generated {
+            background: #eef4ff;
+            border-color: #b2ccff;
+            color: #3538cd;
+        }
+
+        .status-badge.billed {
+            background: #ecfdf3;
+            border-color: #abefc6;
+            color: #067647;
+        }
+
+        .status-badge.cancelled {
+            background: #fef3f2;
+            border-color: #fecdca;
+            color: #b42318;
         }
 
         .alert {
@@ -374,6 +438,50 @@
             color: #fca5a5;
         }
 
+        html.dark-mode .status-badge.generated {
+            background: #1d2447;
+            border-color: #4b5cad;
+            color: #b9c7ff;
+        }
+
+        html.dark-mode .status-badge.billed {
+            background: #0e2b20;
+            border-color: #1b694c;
+            color: #86efac;
+        }
+
+        html.dark-mode .status-badge.cancelled {
+            background: #321315;
+            border-color: #743236;
+            color: #fca5a5;
+        }
+
+        html.dark-mode .btn {
+            box-shadow: none;
+        }
+
+        html.dark-mode .btn.warning {
+            background: #fbbf24;
+            border-color: #f59e0b;
+            color: #111827;
+        }
+
+        html.dark-mode .btn.success {
+            background: #16a34a;
+            border-color: #15803d;
+            color: #fff;
+        }
+
+        html.dark-mode input::placeholder,
+        html.dark-mode textarea::placeholder {
+            color: #8f99aa;
+        }
+
+        html.dark-mode select option {
+            background: var(--field-bg);
+            color: var(--text);
+        }
+
         .theme-toggle {
             min-width: 118px;
         }
@@ -424,11 +532,12 @@
                     @if (file_exists(public_path('images/logo-empresa.png')))
                         <img class="brand-logo" src="{{ asset('images/logo-empresa.png') }}" alt="Multiservicios W. Orellana">
                     @endif
-                    <span>Cartas de Porte</span>
+                    <span>TRANSPORTES W. ORELLANA</span>
                 </a>
                 <nav class="actions">
                     <a class="btn secondary small" href="{{ route('cartas-porte.index') }}">Listado</a>
                     <a class="btn secondary small" href="{{ route('catalogos.index') }}">Datos</a>
+                    <a class="btn secondary small" href="{{ route('facturacion.notas-gastos.index') }}">Facturacion</a>
                     <a class="btn accent small" href="{{ route('cartas-porte.create') }}">Nueva carta</a>
                     <button class="btn secondary small theme-toggle" type="button" data-theme-toggle>Modo oscuro</button>
                     <form method="POST" action="{{ route('logout') }}">
@@ -481,6 +590,38 @@
 
             updateLabel();
         })();
+
+        function askPrintCopies(url) {
+            const copies = window.prompt('¿Cuántas copias desea imprimir?\n\nEscriba 1 para 1 copia o 2 para 2 copias.', '1');
+
+            if (copies === null) {
+                return;
+            }
+
+            if (copies !== '1' && copies !== '2') {
+                alert('Solo se permite imprimir 1 copia o 2 copias.');
+                return;
+            }
+
+            window.location.href = `${url}?copias=${copies}`;
+        }
+
+        function confirmAnulacion(form) {
+            const confirmed = window.confirm('¿Está seguro de que desea anular esta Nota de Gastos? Utilice esta opción únicamente si la factura correspondiente también fue anulada.');
+
+            if (!confirmed) {
+                return false;
+            }
+
+            const motivo = window.prompt('Motivo de anulación (opcional):', '');
+            const field = form.querySelector('[name="motivo_anulacion"]');
+
+            if (field && motivo !== null) {
+                field.value = motivo;
+            }
+
+            return true;
+        }
     </script>
 </body>
 </html>

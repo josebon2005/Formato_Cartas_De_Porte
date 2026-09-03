@@ -12,4 +12,14 @@ class Consignatario extends Model
     {
         return $this->hasMany(CartaPorte::class);
     }
+
+    public function tarifasClientes()
+    {
+        return $this->hasMany(TarifaCliente::class);
+    }
+
+    public function notasGastos()
+    {
+        return $this->hasMany(NotaGasto::class);
+    }
 }

@@ -53,6 +53,9 @@
                 </thead>
                 <tbody>
                     @forelse ($cartas as $carta)
+                        @php
+                            $notaOperacion = $carta->notaGastoOperacion;
+                        @endphp
                         <tr>
                             <td>{{ $carta->numero_correlativo }}</td>
                             <td>{{ $carta->fecha?->format('d/m/Y') }}</td>
@@ -66,6 +69,15 @@
                                     <a class="btn secondary small" href="{{ route('cartas-porte.show', $carta) }}">Ver</a>
                                     <a class="btn secondary small" href="{{ route('cartas-porte.edit', $carta) }}">Editar</a>
                                     <a class="btn small" href="{{ route('cartas-porte.imprimir', $carta) }}">Imprimir</a>
+                                    @if (! $notaOperacion)
+                                        <a class="btn accent small" href="{{ route('facturacion.notas-gastos.desde-carta', $carta) }}">Generar Nota</a>
+                                    @elseif (! $notaOperacion->fel_numero)
+                                        <a class="btn warning small" href="{{ route('facturacion.notas-gastos.facturar', $notaOperacion) }}">Pendiente Factura SAT</a>
+                                    @elseif ($notaOperacion->esta_facturada)
+                                        <a class="btn success small" href="{{ route('facturacion.notas-gastos.show', $notaOperacion) }}">Facturada</a>
+                                    @else
+                                        <a class="btn secondary small" href="{{ route('facturacion.notas-gastos.show', $notaOperacion) }}">Ver Nota</a>
+                                    @endif
                                     <form method="POST" action="{{ route('cartas-porte.destroy', $carta) }}" onsubmit="return confirm('Eliminar esta carta de porte?');">
                                         @csrf
                                         @method('DELETE')

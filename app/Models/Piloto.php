@@ -6,7 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class Piloto extends Model
 {
-    protected $fillable = ['nombre', 'cabezal_id'];
+    protected $fillable = ['nombre', 'cabezal_id', 'activo'];
+
+    protected $casts = [
+        'activo' => 'boolean',
+    ];
 
     public function cartasPorte()
     {

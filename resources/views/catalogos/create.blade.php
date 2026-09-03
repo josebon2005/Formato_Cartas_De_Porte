@@ -49,6 +49,15 @@
                         </datalist>
                         @error('cabezal_placa') <div class="error">{{ $message }}</div> @enderror
                     </div>
+
+                    <div>
+                        <label for="activo">Estado</label>
+                        <select id="activo" name="activo">
+                            <option value="1" @selected(old('activo', '1') === '1')>Activo</option>
+                            <option value="0" @selected(old('activo') === '0')>Inactivo</option>
+                        </select>
+                        @error('activo') <div class="error">{{ $message }}</div> @enderror
+                    </div>
                 @endif
             </div>
 

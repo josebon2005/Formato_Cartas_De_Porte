@@ -33,6 +33,7 @@
                             @if (($catalogo['extras'] ?? null) === 'piloto_detalles')
                                 <th>Licencia</th>
                                 <th>Placa usual</th>
+                                <th>Estado</th>
                             @endif
                             @if (isset($catalogo['extra_label']))
                                 <th>{{ $catalogo['extra_label'] }}</th>
@@ -51,6 +52,11 @@
                                 @if (($catalogo['extras'] ?? null) === 'piloto_detalles')
                                     <td>{{ $item->licencias->first()?->numero }}</td>
                                     <td>{{ $item->cabezalUsual?->placa }}</td>
+                                    <td>
+                                        <span class="status-badge {{ $item->activo ? 'billed' : 'cancelled' }}">
+                                            {{ $item->activo ? 'Activo' : 'Inactivo' }}
+                                        </span>
+                                    </td>
                                 @endif
                                 @if (isset($catalogo['extra_label']))
                                     <td>{{ $item->descripcion }}</td>
@@ -69,7 +75,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="{{ 3 + (isset($catalogo['extra_label']) ? 1 : 0) + (($catalogo['extras'] ?? null) === 'piloto_detalles' ? 2 : 0) }}" class="empty">No hay registros en este apartado.</td>
+                                <td colspan="{{ 3 + (isset($catalogo['extra_label']) ? 1 : 0) + (($catalogo['extras'] ?? null) === 'piloto_detalles' ? 3 : 0) }}" class="empty">No hay registros en este apartado.</td>
                             </tr>
                         @endforelse
                     </tbody>

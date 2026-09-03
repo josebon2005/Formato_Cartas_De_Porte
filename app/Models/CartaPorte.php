@@ -67,6 +67,13 @@ class CartaPorte extends Model
         return $this->belongsTo(Licencia::class);
     }
 
+    public function notasGastos()
+    {
+        return $this->belongsToMany(NotaGasto::class, 'carta_porte_nota_gasto')
+            ->withPivot(['numero_correlativo', 'contenedor'])
+            ->withTimestamps();
+    }
+
     public function getConsignatarioTextoAttribute(): ?string
     {
         return $this->consignatario_nombre ?: $this->consignatario?->nombre;

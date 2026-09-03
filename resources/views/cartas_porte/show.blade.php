@@ -9,7 +9,19 @@
             <p class="subtle">Registro guardado el {{ $cartaPorte->created_at?->format('d/m/Y H:i') }}.</p>
         </div>
         <div class="actions">
+            @php
+                $notaOperacion = $cartaPorte->notaGastoOperacion;
+            @endphp
             <a class="btn accent" href="{{ route('cartas-porte.create') }}">Nueva carta</a>
+            @if (! $notaOperacion)
+                <a class="btn accent" href="{{ route('facturacion.notas-gastos.desde-carta', $cartaPorte) }}">Generar Nota de Gastos</a>
+            @elseif (! $notaOperacion->fel_numero)
+                <a class="btn warning" href="{{ route('facturacion.notas-gastos.facturar', $notaOperacion) }}">Pendiente Factura SAT</a>
+            @elseif ($notaOperacion->esta_facturada)
+                <a class="btn success" href="{{ route('facturacion.notas-gastos.show', $notaOperacion) }}">Facturada</a>
+            @else
+                <a class="btn secondary" href="{{ route('facturacion.notas-gastos.show', $notaOperacion) }}">Ver Nota</a>
+            @endif
             <a class="btn" href="{{ route('cartas-porte.imprimir', $cartaPorte) }}">Imprimir</a>
             <a class="btn secondary" href="{{ route('cartas-porte.edit', $cartaPorte) }}">Editar</a>
             <a class="btn secondary" href="{{ route('cartas-porte.index') }}">Volver</a>

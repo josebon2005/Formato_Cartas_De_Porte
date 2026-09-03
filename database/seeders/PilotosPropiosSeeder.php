@@ -41,7 +41,10 @@ class PilotosPropiosSeeder extends Seeder
 
                 $piloto = Piloto::updateOrCreate(
                     ['nombre' => $data['nombre']],
-                    ['cabezal_id' => $cabezal->id],
+                    [
+                        'cabezal_id' => $cabezal->id,
+                        'activo' => true,
+                    ],
                 );
 
                 Licencia::updateOrCreate(
