@@ -111,6 +111,10 @@
             padding: 28px 20px 48px;
         }
 
+        .container.container-wide {
+            max-width: 1500px;
+        }
+
         .page-head {
             align-items: flex-start;
             display: flex;
@@ -329,6 +333,32 @@
             width: 100%;
         }
 
+        .table-wrap {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .cartas-table {
+            min-width: 1160px;
+        }
+
+        .cartas-table .actions-column,
+        .cartas-table .actions-cell {
+            min-width: 430px;
+            width: 430px;
+        }
+
+        .table-actions {
+            align-items: center;
+            flex-wrap: nowrap;
+            min-width: max-content;
+        }
+
+        .table-actions form {
+            display: inline-flex;
+            margin: 0;
+        }
+
         th, td {
             border-bottom: 1px solid var(--line);
             padding: 12px 10px;
@@ -494,7 +524,68 @@
             text-transform: uppercase;
         }
 
-        .pagination { margin-top: 18px; }
+        .pagination {
+            margin-top: 18px;
+        }
+
+        .pagination-nav {
+            align-items: center;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px 14px;
+            justify-content: space-between;
+        }
+
+        .pagination-summary {
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .pagination-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .pagination-link,
+        .pagination-ellipsis {
+            align-items: center;
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            color: var(--text);
+            display: inline-flex;
+            font-size: 13px;
+            font-weight: 700;
+            justify-content: center;
+            min-height: 34px;
+            min-width: 34px;
+            padding: 7px 10px;
+            text-decoration: none;
+            white-space: nowrap;
+        }
+
+        .pagination-link:hover {
+            background: var(--surface-soft);
+        }
+
+        .pagination-link.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: var(--button-text);
+        }
+
+        .pagination-link.disabled,
+        .pagination-ellipsis {
+            background: var(--surface-soft);
+            color: var(--muted);
+            pointer-events: none;
+        }
+
+        .pagination svg {
+            height: 16px;
+            width: 16px;
+        }
 
         @media (max-width: 900px) {
             .topbar-inner { align-items: flex-start; flex-direction: column; }
@@ -503,7 +594,6 @@
             .page-head { display: block; }
             .page-head .actions { margin-top: 12px; }
             table { min-width: 820px; }
-            .table-wrap { overflow-x: auto; }
         }
 
         @media print {
@@ -548,7 +638,7 @@
             </div>
         </header>
 
-        <main class="container">
+        <main class="container @yield('container_class')">
             @if (session('status'))
                 <div class="alert">{{ session('status') }}</div>
             @endif

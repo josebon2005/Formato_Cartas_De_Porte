@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Cartas de Porte')
+@section('container_class', 'container-wide')
 
 @section('content')
     <div class="page-head">
@@ -38,7 +39,7 @@
         </form>
 
         <div class="table-wrap">
-            <table>
+            <table class="cartas-table">
                 <thead>
                     <tr>
                         <th>No.</th>
@@ -48,7 +49,7 @@
                         <th>B/L</th>
                         <th>Poliza</th>
                         <th>Piloto</th>
-                        <th>Acciones</th>
+                        <th class="actions-column">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -64,8 +65,8 @@
                             <td>{{ $carta->bl }}</td>
                             <td>{{ $carta->poliza }}</td>
                             <td>{{ $carta->piloto_texto }}</td>
-                            <td>
-                                <div class="actions">
+                            <td class="actions-cell">
+                                <div class="actions table-actions">
                                     <a class="btn secondary small" href="{{ route('cartas-porte.show', $carta) }}">Ver</a>
                                     <a class="btn secondary small" href="{{ route('cartas-porte.edit', $carta) }}">Editar</a>
                                     <a class="btn small" href="{{ route('cartas-porte.imprimir', $carta) }}">Imprimir</a>
@@ -96,7 +97,7 @@
         </div>
 
         <div class="pagination">
-            {{ $cartas->links() }}
+            {{ $cartas->links('vendor.pagination.app') }}
         </div>
     </section>
 @endsection
