@@ -5,7 +5,6 @@ use App\Http\Controllers\CartaPorteController;
 use App\Http\Controllers\CatalogoController;
 use App\Http\Controllers\ConceptoGastoController;
 use App\Http\Controllers\NotaGastoController;
-use App\Http\Controllers\TarifaClienteController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('login', [AuthController::class, 'showLogin'])->name('login');
@@ -32,10 +31,6 @@ Route::middleware('auth')->group(function () {
         Route::resource('notas-gastos', NotaGastoController::class)
             ->only(['index', 'show', 'edit', 'update', 'destroy'])
             ->parameters(['notas-gastos' => 'notaGasto']);
-
-        Route::get('tarifas-clientes', [TarifaClienteController::class, 'index'])->name('tarifas-clientes.index');
-        Route::get('tarifas-clientes/{consignatario}/editar', [TarifaClienteController::class, 'edit'])->name('tarifas-clientes.edit');
-        Route::put('tarifas-clientes/{consignatario}', [TarifaClienteController::class, 'update'])->name('tarifas-clientes.update');
 
         Route::resource('conceptos-gastos', ConceptoGastoController::class)
             ->only(['index', 'create', 'store', 'edit', 'update', 'destroy'])

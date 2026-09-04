@@ -9,8 +9,7 @@
             <p class="subtle">Consulta las operaciones agrupadas por BL y poliza.</p>
         </div>
         <div class="actions">
-            <a class="btn secondary" href="{{ route('facturacion.tarifas-clientes.index') }}">Tarifas</a>
-            <a class="btn secondary" href="{{ route('facturacion.conceptos-gastos.index') }}">Conceptos</a>
+            <a class="btn secondary" href="{{ route('facturacion.conceptos-gastos.index') }}">Cobros</a>
         </div>
     </div>
 

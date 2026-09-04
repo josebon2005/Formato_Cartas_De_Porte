@@ -10,7 +10,10 @@ class ConceptoGastoController extends Controller
 {
     public function index()
     {
-        $conceptos = ConceptoGasto::orderBy('orden')->orderBy('nombre')->get();
+        $conceptos = ConceptoGasto::where('activo', true)
+            ->orderBy('orden')
+            ->orderBy('nombre')
+            ->get();
 
         return view('facturacion.conceptos_gastos.index', compact('conceptos'));
     }
@@ -18,22 +21,24 @@ class ConceptoGastoController extends Controller
     public function create()
     {
         return view('facturacion.conceptos_gastos.create', [
-            'concepto' => new ConceptoGasto([
-                'tipo_calculo' => 'fijo',
-                'grupo' => 'subtotal',
-                'activo' => true,
-                'orden' => ((int) ConceptoGasto::max('orden')) + 1,
-            ]),
+            'concepto' => new ConceptoGasto,
         ]);
     }
 
     public function store(Request $request)
     {
-        ConceptoGasto::create($this->validatedData($request));
+        ConceptoGasto::create([
+            ...$this->validatedData($request),
+            'codigo' => null,
+            'tipo_calculo' => 'fijo',
+            'grupo' => 'subtotal',
+            'activo' => true,
+            'orden' => ((int) ConceptoGasto::max('orden')) + 1,
+        ]);
 
         return redirect()
             ->route('facturacion.conceptos-gastos.index')
-            ->with('status', 'Concepto de gasto creado correctamente.');
+            ->with('status', 'Cobro creado correctamente.');
     }
 
     public function edit(ConceptoGasto $conceptosGasto)
@@ -54,39 +59,30 @@ class ConceptoGastoController extends Controller
 
     public function destroy(ConceptoGasto $conceptosGasto)
     {
+        if ($conceptosGasto->notaGastoDetalles()->exists() || $conceptosGasto->tarifasClientes()->exists()) {
+            $conceptosGasto->update(['activo' => false]);
+
+            return redirect()
+                ->route('facturacion.conceptos-gastos.index')
+                ->with('status', 'Cobro desactivado correctamente. Las Notas de Gastos anteriores conservaran su historial.');
+        }
+
         $conceptosGasto->delete();
 
         return redirect()
             ->route('facturacion.conceptos-gastos.index')
-            ->with('status', 'Concepto de gasto eliminado correctamente.');
+            ->with('status', 'Cobro eliminado correctamente.');
     }
 
     private function validatedData(Request $request, ?ConceptoGasto $concepto = null): array
     {
-        $validated = $request->validate([
+        return $request->validate([
             'nombre' => [
                 'required',
                 'string',
                 'max:255',
                 Rule::unique('conceptos_gastos', 'nombre')->ignore($concepto?->id),
             ],
-            'codigo' => [
-                'nullable',
-                'string',
-                'max:80',
-                Rule::unique('conceptos_gastos', 'codigo')->ignore($concepto?->id),
-            ],
-            'tipo_calculo' => ['required', Rule::in(['fijo', 'por_contenedor'])],
-            'grupo' => ['required', Rule::in(['subtotal', 'adicional'])],
-            'orden' => ['nullable', 'integer', 'min:0'],
-            'activo' => ['nullable', 'boolean'],
         ]);
-
-        return [
-            ...$validated,
-            'codigo' => $validated['codigo'] ? trim($validated['codigo']) : null,
-            'orden' => $validated['orden'] ?? 0,
-            'activo' => $request->boolean('activo'),
-        ];
     }
 }

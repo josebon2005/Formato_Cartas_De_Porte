@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\CartaPorte;
 use App\Models\ConceptoGasto;
-use App\Models\Consignatario;
 use App\Models\NotaGasto;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -57,7 +56,7 @@ class NotaGastoController extends Controller
         }
 
         $cartas = $this->cartasOperacion($cartaPorte)->get();
-        $detalles = $this->detallesDesdeTarifas($cartaPorte, $cartas->count());
+        $detalles = $this->detallesDesdeCobros($cartas->count());
 
         return view('facturacion.notas_gastos.preview', [
             'cartaPorte' => $cartaPorte,
@@ -263,51 +262,23 @@ class NotaGastoController extends Controller
             ->orderBy('numero_correlativo');
     }
 
-    private function detallesDesdeTarifas(CartaPorte $cartaPorte, int $cantidadContenedores): array
+    private function detallesDesdeCobros(int $cantidadContenedores): array
     {
-        $tarifas = collect();
-
-        if ($cartaPorte->consignatario_id) {
-            $cliente = Consignatario::with(['tarifasClientes.conceptoGasto'])
-                ->find($cartaPorte->consignatario_id);
-
-            $tarifas = $cliente?->tarifasClientes
-                ->filter(fn ($tarifa) => $tarifa->activo && $tarifa->conceptoGasto?->activo)
-                ->sortBy(fn ($tarifa) => [$tarifa->conceptoGasto->orden, $tarifa->conceptoGasto->nombre])
-                ->values() ?? collect();
-        }
-
-        if ($tarifas->isNotEmpty()) {
-            return $tarifas->map(function ($tarifa) use ($cantidadContenedores) {
-                $concepto = $tarifa->conceptoGasto;
-                $cantidad = $concepto->tipo_calculo === 'por_contenedor'
-                    ? $cantidadContenedores
-                    : ($tarifa->cantidad_default ?: 1);
-
-                return [
-                    'concepto_gasto_id' => $concepto->id,
-                    'concepto_nombre' => $concepto->nombre,
-                    'numero_factura' => null,
-                    'precio_unitario' => (float) $tarifa->precio_unitario,
-                    'cantidad' => (float) $cantidad,
-                    'grupo' => $concepto->grupo,
-                    'incluido' => $tarifa->incluir_por_defecto,
-                    'orden' => $concepto->orden,
-                ];
-            })->all();
-        }
-
         return ConceptoGasto::where('activo', true)
             ->orderBy('orden')
             ->orderBy('nombre')
             ->get()
             ->map(function ($concepto) use ($cantidadContenedores) {
+                $cantidad = $concepto->tipo_calculo === 'por_contenedor'
+                    ? $cantidadContenedores
+                    : 1;
+
                 return [
                     'concepto_gasto_id' => $concepto->id,
                     'concepto_nombre' => $concepto->nombre,
                     'numero_factura' => null,
                     'precio_unitario' => 0,
-                    'cantidad' => $concepto->tipo_calculo === 'por_contenedor' ? $cantidadContenedores : 1,
+                    'cantidad' => (float) $cantidad,
                     'grupo' => $concepto->grupo,
                     'incluido' => false,
                     'orden' => $concepto->orden,

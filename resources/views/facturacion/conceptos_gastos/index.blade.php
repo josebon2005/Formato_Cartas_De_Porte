@@ -1,16 +1,16 @@
 @extends('layouts.app')
 
-@section('title', 'Conceptos de Gastos')
+@section('title', 'Cobros')
 
 @section('content')
     <div class="page-head">
         <div>
-            <h1>Conceptos de Gastos</h1>
-            <p class="subtle">Administra los conceptos disponibles para tarifas y notas.</p>
+            <h1>Cobros</h1>
+            <p class="subtle">Administra los conceptos disponibles para Notas de Gastos.</p>
         </div>
         <div class="actions">
             <a class="btn secondary" href="{{ route('facturacion.notas-gastos.index') }}">Notas</a>
-            <a class="btn accent" href="{{ route('facturacion.conceptos-gastos.create') }}">Nuevo concepto</a>
+            <a class="btn accent" href="{{ route('facturacion.conceptos-gastos.create') }}">Nuevo cobro</a>
         </div>
     </div>
 
@@ -20,27 +20,17 @@
                 <thead>
                     <tr>
                         <th>Nombre</th>
-                        <th>Codigo</th>
-                        <th>Tipo</th>
-                        <th>Grupo</th>
-                        <th>Activo</th>
-                        <th>Orden</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach ($conceptos as $concepto)
+                    @forelse ($conceptos as $concepto)
                         <tr>
                             <td>{{ $concepto->nombre }}</td>
-                            <td>{{ $concepto->codigo }}</td>
-                            <td>{{ str_replace('_', ' ', $concepto->tipo_calculo) }}</td>
-                            <td>{{ ucfirst($concepto->grupo) }}</td>
-                            <td>{{ $concepto->activo ? 'Si' : 'No' }}</td>
-                            <td>{{ $concepto->orden }}</td>
                             <td>
                                 <div class="actions">
                                     <a class="btn secondary small" href="{{ route('facturacion.conceptos-gastos.edit', $concepto) }}">Editar</a>
-                                    <form method="POST" action="{{ route('facturacion.conceptos-gastos.destroy', $concepto) }}" onsubmit="return confirm('Eliminar este concepto?');">
+                                    <form method="POST" action="{{ route('facturacion.conceptos-gastos.destroy', $concepto) }}" onsubmit="return confirm('Eliminar este cobro? Si ya fue utilizado, se desactivara para conservar el historial.');">
                                         @csrf
                                         @method('DELETE')
                                         <button class="btn danger small" type="submit">Eliminar</button>
@@ -48,7 +38,11 @@
                                 </div>
                             </td>
                         </tr>
-                    @endforeach
+                    @empty
+                        <tr>
+                            <td colspan="2" class="empty">Todavia no hay cobros disponibles.</td>
+                        </tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>

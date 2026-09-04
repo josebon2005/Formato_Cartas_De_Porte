@@ -341,6 +341,8 @@ class ExampleTest extends TestCase
         $preview->assertSee('CONT-A');
         $preview->assertSee('CONT-B');
         $preview->assertDontSee('CONT-C');
+        $preview->assertDontSee('value="3139.00"', false);
+        $preview->assertDontSee('value="280.00"', false);
         $preview->assertSee('Valor flete Santo Tomas de Castilla hacia Guatemala por 2 contenedores conteniendo Mercaderia general, amparado con BL-BL-GRUPO Póliza-POL-GRUPO.');
 
         $response = $this->post(route('facturacion.notas-gastos.store-desde-carta', $carta), [
@@ -889,6 +891,178 @@ class ExampleTest extends TestCase
             'estado' => NotaGasto::ESTADO_NOTA_GENERADA,
         ]);
         $this->assertDatabaseCount('cartas_porte', 1);
+    }
+
+    public function test_cobros_catalog_creates_and_updates_options_for_new_notas_gastos(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $this->get(route('facturacion.conceptos-gastos.create'))
+            ->assertOk()
+            ->assertSee('Nombre del cobro')
+            ->assertSee('Guardar cobro')
+            ->assertSee('Cancelar')
+            ->assertDontSee('Codigo')
+            ->assertDontSee('Tipo de calculo')
+            ->assertDontSee('Grupo')
+            ->assertDontSee('Orden')
+            ->assertDontSee('Activo');
+
+        $this->get(route('facturacion.notas-gastos.index'))
+            ->assertOk()
+            ->assertSee('Cobros')
+            ->assertDontSee('Tarifas');
+
+        $this->get('/facturacion/tarifas-clientes')->assertNotFound();
+
+        $cliente = Consignatario::create(['nombre' => 'Cliente Manual']);
+        $flete = ConceptoGasto::where('codigo', 'flete')->firstOrFail();
+
+        TarifaCliente::create([
+            'consignatario_id' => $cliente->id,
+            'concepto_gasto_id' => $flete->id,
+            'precio_unitario' => 100,
+            'incluir_por_defecto' => true,
+            'activo' => true,
+        ]);
+
+        $this->post(route('cartas-porte.store'), $this->cartaPayload([
+            'consignatario_id' => $cliente->id,
+            'consignatario_nombre' => $cliente->nombre,
+            'bl' => 'BL-COBROS',
+            'poliza' => 'POL-COBROS',
+        ]))->assertRedirect();
+
+        $carta = CartaPorte::firstOrFail();
+
+        $this->post(route('facturacion.conceptos-gastos.store'), [
+            'nombre' => 'Servicio Patio',
+        ])->assertRedirect(route('facturacion.conceptos-gastos.index'));
+
+        $concepto = ConceptoGasto::where('nombre', 'Servicio Patio')->firstOrFail();
+
+        $this->assertNull($concepto->codigo);
+        $this->assertSame('fijo', $concepto->tipo_calculo);
+        $this->assertSame('subtotal', $concepto->grupo);
+        $this->assertTrue($concepto->activo);
+
+        $preview = $this->get(route('facturacion.notas-gastos.desde-carta', $carta));
+
+        $preview
+            ->assertOk()
+            ->assertSee('Servicio Patio')
+            ->assertSee('value="'.$concepto->id.'"', false)
+            ->assertSee('<option value="subtotal" selected>Subtotal</option>', false)
+            ->assertDontSee('value="100.00"', false);
+
+        $this->get(route('facturacion.conceptos-gastos.index'))
+            ->assertOk()
+            ->assertSee('Servicio Patio')
+            ->assertSee('Acciones')
+            ->assertDontSee('Codigo')
+            ->assertDontSee('Tipo')
+            ->assertDontSee('Grupo')
+            ->assertDontSee('Orden')
+            ->assertDontSee('Activo')
+            ->assertDontSee('Uso');
+
+        $this->put(route('facturacion.conceptos-gastos.update', $concepto), [
+            'nombre' => 'Servicio Patio Especial',
+        ])->assertRedirect(route('facturacion.conceptos-gastos.index'));
+
+        $concepto->refresh();
+
+        $this->assertNull($concepto->codigo);
+        $this->assertSame('fijo', $concepto->tipo_calculo);
+        $this->assertSame('subtotal', $concepto->grupo);
+        $this->assertTrue($concepto->activo);
+
+        $this->get(route('facturacion.notas-gastos.desde-carta', $carta))
+            ->assertOk()
+            ->assertSee('Servicio Patio Especial')
+            ->assertDontSee('value="Servicio Patio"', false);
+    }
+
+    public function test_cobro_with_history_is_deactivated_without_changing_old_nota_gasto(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $this->post(route('cartas-porte.store'), $this->cartaPayload([
+            'bl' => 'BL-COBRO-HISTORIAL',
+            'poliza' => 'POL-COBRO-HISTORIAL',
+        ]))->assertRedirect();
+
+        $carta = CartaPorte::firstOrFail();
+        $concepto = ConceptoGasto::create([
+            'nombre' => 'Revision Especial',
+            'codigo' => 'revision-especial',
+            'tipo_calculo' => 'fijo',
+            'grupo' => 'adicional',
+            'activo' => true,
+            'orden' => 96,
+        ]);
+        $nota = NotaGasto::create([
+            'fecha' => '2026-09-03',
+            'consignatario_nombre' => 'Cliente de Prueba',
+            'bl' => 'BL-COBRO-HISTORIAL',
+            'poliza' => 'POL-COBRO-HISTORIAL',
+            'cantidad_contenedores' => 1,
+            'descripcion' => 'Nota con cobro historico',
+            'subtotal' => 0,
+            'total' => 250,
+            'estado' => NotaGasto::ESTADO_ANULADA,
+        ]);
+        $nota->detalles()->create([
+            'concepto_gasto_id' => $concepto->id,
+            'concepto_nombre' => 'Revision Especial',
+            'precio_unitario' => 250,
+            'cantidad' => 1,
+            'total' => 250,
+            'grupo' => 'adicional',
+            'incluido' => true,
+            'orden' => 1,
+        ]);
+
+        $this->delete(route('facturacion.conceptos-gastos.destroy', $concepto))
+            ->assertRedirect(route('facturacion.conceptos-gastos.index'))
+            ->assertSessionHas('status', 'Cobro desactivado correctamente. Las Notas de Gastos anteriores conservaran su historial.');
+
+        $this->assertDatabaseHas('conceptos_gastos', [
+            'id' => $concepto->id,
+            'activo' => false,
+        ]);
+
+        $this->get(route('facturacion.notas-gastos.show', $nota))
+            ->assertOk()
+            ->assertSee('Revision Especial');
+
+        $this->get(route('facturacion.conceptos-gastos.index'))
+            ->assertOk()
+            ->assertDontSee('Revision Especial');
+
+        $this->get(route('facturacion.notas-gastos.desde-carta', $carta))
+            ->assertOk()
+            ->assertDontSee('Revision Especial');
+    }
+
+    public function test_unused_cobro_can_be_deleted_permanently(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $concepto = ConceptoGasto::create([
+            'nombre' => 'Cobro Temporal',
+            'codigo' => 'cobro-temporal',
+            'tipo_calculo' => 'fijo',
+            'grupo' => 'subtotal',
+            'activo' => true,
+            'orden' => 97,
+        ]);
+
+        $this->delete(route('facturacion.conceptos-gastos.destroy', $concepto))
+            ->assertRedirect(route('facturacion.conceptos-gastos.index'))
+            ->assertSessionHas('status', 'Cobro eliminado correctamente.');
+
+        $this->assertDatabaseMissing('conceptos_gastos', ['id' => $concepto->id]);
     }
 
     private function cartaPayload(array $overrides = []): array

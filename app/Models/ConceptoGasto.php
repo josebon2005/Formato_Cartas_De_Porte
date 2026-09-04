@@ -26,4 +26,9 @@ class ConceptoGasto extends Model
     {
         return $this->hasMany(TarifaCliente::class);
     }
+
+    public function notaGastoDetalles()
+    {
+        return $this->hasMany(NotaGastoDetalle::class);
+    }
 }

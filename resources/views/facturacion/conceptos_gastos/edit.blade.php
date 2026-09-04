@@ -1,11 +1,11 @@
 @extends('layouts.app')
 
-@section('title', 'Editar Concepto')
+@section('title', 'Editar Cobro')
 
 @section('content')
     <div class="page-head">
         <div>
-            <h1>Editar Concepto</h1>
+            <h1>Editar Cobro</h1>
             <p class="subtle">Las notas ya generadas conservan su propio detalle.</p>
         </div>
     </div>
