@@ -59,7 +59,7 @@
 
             <div class="form-actions">
                 <a class="btn secondary" href="{{ route('cartas-porte.show', $cartaPorte) }}">Cancelar</a>
-                <button class="btn accent" type="submit" @disabled(count($detalles) === 0)>Guardar nota</button>
+                <button class="btn accent" type="submit">Guardar nota</button>
             </div>
         </form>
     </section>

@@ -26,9 +26,13 @@
 @endphp
 
 <div class="span-3">
-    <label for="descripcion">Descripcion de la operacion</label>
+    <label class="description-heading" for="descripcion">Descripcion</label>
     <textarea id="descripcion" name="descripcion">{{ old('descripcion', $descripcion ?? $notaGasto->descripcion ?? '') }}</textarea>
     @error('descripcion') <div class="error">{{ $message }}</div> @enderror
+</div>
+
+<div class="span-3 expense-toolbar">
+    <button class="btn secondary small" type="button" data-add-custom-expense>+ Agregar cobro solo para esta nota</button>
 </div>
 
 <div class="span-3 table-wrap">
@@ -44,7 +48,7 @@
                 <th>Total</th>
             </tr>
         </thead>
-        <tbody>
+        <tbody data-expense-rows data-next-index="{{ $rows->count() }}">
             @forelse ($rows as $index => $detalle)
                 @php
                     $incluido = (bool) ($detalle['incluido'] ?? false);
@@ -90,7 +94,7 @@
                     <td><strong data-row-total>Q0.00</strong></td>
                 </tr>
             @empty
-                <tr>
+                <tr data-empty-expenses>
                     <td colspan="7" class="empty">No hay conceptos activos. Agrega conceptos de gasto antes de generar notas.</td>
                 </tr>
             @endforelse
@@ -115,6 +119,8 @@
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
             })}`;
+            const rowsBody = document.querySelector('[data-expense-rows]');
+            const addCustomButton = document.querySelector('[data-add-custom-expense]');
 
             const recalculate = () => {
                 let subtotal = 0;
@@ -152,6 +158,52 @@
                 }
             };
 
+            const addCustomExpense = () => {
+                const name = (window.prompt('Nombre del cobro') || '').trim();
+
+                if (! name || ! rowsBody) {
+                    return;
+                }
+
+                const index = Number(rowsBody.dataset.nextIndex || document.querySelectorAll('[data-expense-row]').length);
+                rowsBody.dataset.nextIndex = String(index + 1);
+
+                const row = document.createElement('tr');
+                row.setAttribute('data-expense-row', '');
+                row.innerHTML = `
+                    <td>
+                        <input name="detalles[${index}][incluido]" type="hidden" value="0">
+                        <input name="detalles[${index}][incluido]" type="checkbox" value="1" data-row-enabled checked style="min-height: auto; width: auto;">
+                    </td>
+                    <td>
+                        <input name="detalles[${index}][concepto_gasto_id]" type="hidden" value="">
+                        <input name="detalles[${index}][orden]" type="hidden" value="${1000 + index}">
+                        <input name="detalles[${index}][concepto_nombre]" required data-row-name>
+                    </td>
+                    <td>
+                        <input name="detalles[${index}][numero_factura]" value="">
+                    </td>
+                    <td>
+                        <select name="detalles[${index}][grupo]" data-row-group>
+                            <option value="subtotal" selected>Subtotal</option>
+                            <option value="adicional">Adicional</option>
+                        </select>
+                    </td>
+                    <td>
+                        <input name="detalles[${index}][precio_unitario]" type="number" min="0" step="0.01" value="0.00" data-row-price>
+                    </td>
+                    <td>
+                        <input name="detalles[${index}][cantidad]" type="number" min="0" step="0.01" value="1" data-row-quantity>
+                    </td>
+                    <td><strong data-row-total>Q0.00</strong></td>
+                `;
+                row.querySelector('[data-row-name]').value = name;
+
+                rowsBody.querySelector('[data-empty-expenses]')?.remove();
+                rowsBody.appendChild(row);
+                recalculate();
+            };
+
             document.addEventListener('input', event => {
                 if (event.target.closest('[data-expense-row]')) {
                     recalculate();
@@ -162,6 +214,7 @@
                     recalculate();
                 }
             });
+            addCustomButton?.addEventListener('click', addCustomExpense);
             recalculate();
         })();
     </script>

@@ -1065,6 +1065,174 @@ class ExampleTest extends TestCase
         $this->assertDatabaseMissing('conceptos_gastos', ['id' => $concepto->id]);
     }
 
+    public function test_custom_cobro_for_single_nota_is_saved_only_in_that_nota(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $this->post(route('cartas-porte.store'), $this->cartaPayload([
+            'bl' => 'BL-TEMPORAL',
+            'poliza' => 'POL-TEMPORAL',
+        ]))->assertRedirect();
+
+        $carta = CartaPorte::firstOrFail();
+
+        $this->get(route('facturacion.notas-gastos.desde-carta', $carta))
+            ->assertOk()
+            ->assertSee('+ Agregar cobro solo para esta nota')
+            ->assertSee('Descripcion');
+
+        $this->post(route('facturacion.notas-gastos.store-desde-carta', $carta), [
+            'detalles' => [
+                [
+                    'concepto_gasto_id' => null,
+                    'concepto_nombre' => 'Horas extras',
+                    'numero_factura' => 'FAC-TEMP-1',
+                    'precio_unitario' => 125,
+                    'cantidad' => 2,
+                    'grupo' => 'adicional',
+                    'incluido' => 1,
+                    'orden' => 1000,
+                ],
+            ],
+        ])->assertRedirect();
+
+        $nota = NotaGasto::firstOrFail();
+
+        $this->assertDatabaseHas('nota_gasto_detalles', [
+            'nota_gasto_id' => $nota->id,
+            'concepto_gasto_id' => null,
+            'concepto_nombre' => 'Horas extras',
+            'numero_factura' => 'FAC-TEMP-1',
+            'total' => 250,
+        ]);
+        $this->assertDatabaseMissing('conceptos_gastos', ['nombre' => 'Horas extras']);
+
+        $this->get(route('facturacion.notas-gastos.show', $nota))
+            ->assertOk()
+            ->assertSeeInOrder(['Descripcion', 'Valor flete'])
+            ->assertSee('Horas extras')
+            ->assertSee('FAC-TEMP-1');
+    }
+
+    public function test_new_nota_preloads_last_valid_catalog_cobros_for_same_cliente(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $cliente = Consignatario::create(['nombre' => 'Cliente Recurrente']);
+        $flete = ConceptoGasto::where('codigo', 'flete')->firstOrFail();
+        $lavado = ConceptoGasto::where('codigo', 'lavado')->firstOrFail();
+
+        $notaAnterior = NotaGasto::create([
+            'fecha' => '2026-09-01',
+            'consignatario_id' => $cliente->id,
+            'consignatario_nombre' => $cliente->nombre,
+            'bl' => 'BL-ANTERIOR',
+            'poliza' => 'POL-ANTERIOR',
+            'cantidad_contenedores' => 1,
+            'descripcion' => 'Nota anterior valida',
+            'subtotal' => 802.50,
+            'total' => 802.50,
+            'estado' => NotaGasto::ESTADO_FACTURADA,
+            'fel_numero' => 'FEL-ANTERIOR',
+        ]);
+        $notaAnterior->detalles()->create([
+            'concepto_gasto_id' => $flete->id,
+            'concepto_nombre' => 'Flete',
+            'numero_factura' => 'FAC-ANTERIOR',
+            'precio_unitario' => 321,
+            'cantidad' => 2.5,
+            'total' => 802.50,
+            'grupo' => 'adicional',
+            'incluido' => true,
+            'orden' => 10,
+        ]);
+        $notaAnterior->detalles()->create([
+            'concepto_gasto_id' => null,
+            'concepto_nombre' => 'Movimiento especial anterior',
+            'precio_unitario' => 50,
+            'cantidad' => 1,
+            'total' => 50,
+            'grupo' => 'subtotal',
+            'incluido' => true,
+            'orden' => 1000,
+        ]);
+
+        $notaAnulada = NotaGasto::create([
+            'fecha' => '2026-09-05',
+            'consignatario_id' => $cliente->id,
+            'consignatario_nombre' => $cliente->nombre,
+            'bl' => 'BL-ANULADA-PRECARGA',
+            'poliza' => 'POL-ANULADA-PRECARGA',
+            'cantidad_contenedores' => 1,
+            'descripcion' => 'Nota anulada que no debe heredarse',
+            'subtotal' => 999,
+            'total' => 999,
+            'estado' => NotaGasto::ESTADO_ANULADA,
+            'fecha_anulacion' => now(),
+        ]);
+        $notaAnulada->detalles()->create([
+            'concepto_gasto_id' => $lavado->id,
+            'concepto_nombre' => 'Lavado',
+            'precio_unitario' => 999,
+            'cantidad' => 1,
+            'total' => 999,
+            'grupo' => 'subtotal',
+            'incluido' => true,
+            'orden' => 20,
+        ]);
+
+        $this->post(route('cartas-porte.store'), $this->cartaPayload([
+            'consignatario_id' => $cliente->id,
+            'consignatario_nombre' => $cliente->nombre,
+            'bl' => 'BL-NUEVA-PRECARGA',
+            'poliza' => 'POL-NUEVA-PRECARGA',
+        ]))->assertRedirect();
+
+        $carta = CartaPorte::firstOrFail();
+
+        $this->get(route('facturacion.notas-gastos.desde-carta', $carta))
+            ->assertOk()
+            ->assertSee('name="detalles[0][concepto_gasto_id]" type="hidden" value="'.$flete->id.'"', false)
+            ->assertSee('value="321.00"', false)
+            ->assertSee('value="2.5"', false)
+            ->assertSee('<option value="adicional" selected>Adicional</option>', false)
+            ->assertDontSee('FAC-ANTERIOR')
+            ->assertDontSee('Movimiento especial anterior')
+            ->assertDontSee('value="999.00"', false);
+    }
+
+    public function test_print_view_shows_description_heading_before_flete_text(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        $nota = NotaGasto::create([
+            'fecha' => '2026-09-07',
+            'consignatario_nombre' => 'Cliente de Prueba',
+            'bl' => 'BL-DESCRIPCION',
+            'poliza' => 'POL-DESCRIPCION',
+            'cantidad_contenedores' => 1,
+            'descripcion' => 'Valor flete Santo Tomas hacia Guatemala por 1 contenedor conteniendo carga, amparado con BL-BL-DESCRIPCION Poliza-POL-DESCRIPCION.',
+            'subtotal' => 100,
+            'total' => 100,
+            'estado' => NotaGasto::ESTADO_FACTURADA,
+            'fel_numero' => 'FEL-DESCRIPCION',
+            'factura_fecha' => '2026-09-07',
+        ]);
+        $nota->detalles()->create([
+            'concepto_nombre' => 'Flete',
+            'precio_unitario' => 100,
+            'cantidad' => 1,
+            'total' => 100,
+            'grupo' => 'subtotal',
+            'incluido' => true,
+            'orden' => 1,
+        ]);
+
+        $this->get(route('facturacion.notas-gastos.imprimir', [$nota, 'copias' => 1]))
+            ->assertOk()
+            ->assertSeeInOrder(['Descripcion', 'Valor flete']);
+    }
+
     private function cartaPayload(array $overrides = []): array
     {
         return array_merge([

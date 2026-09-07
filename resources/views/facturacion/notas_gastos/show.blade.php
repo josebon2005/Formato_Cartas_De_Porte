@@ -62,8 +62,8 @@
     </section>
 
     <section class="panel" style="margin-bottom: 18px;">
-        <h1 style="font-size: 20px;">Descripcion</h1>
-        <p>{{ $notaGasto->descripcion }}</p>
+        <div class="description-heading">Descripcion</div>
+        <p class="description-body">{{ $notaGasto->descripcion }}</p>
     </section>
 
     <section class="panel" style="margin-bottom: 18px;">

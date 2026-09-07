@@ -524,6 +524,39 @@
             text-transform: uppercase;
         }
 
+        .description-heading {
+            background: var(--table-head);
+            border-radius: 6px 6px 0 0;
+            color: #fff;
+            display: block;
+            font-size: 12px;
+            font-weight: 800;
+            margin: 0;
+            padding: 10px 12px;
+            text-transform: uppercase;
+        }
+
+        .description-heading + textarea,
+        .description-body {
+            border-top-left-radius: 0;
+            border-top-right-radius: 0;
+        }
+
+        .description-body {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-top: 0;
+            line-height: 1.6;
+            margin: 0;
+            padding: 12px;
+        }
+
+        .expense-toolbar {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: -4px;
+        }
+
         .pagination {
             margin-top: 18px;
         }

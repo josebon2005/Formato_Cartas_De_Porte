@@ -124,10 +124,25 @@
         }
 
         .description {
+            border: 1px solid #d1d5db;
+            border-top: 0;
             font-size: 14.5px;
             line-height: 1.55;
-            margin: .24in 0 .31in;
+            margin: 0 0 .31in;
+            padding: .12in .08in;
             text-transform: uppercase;
+        }
+
+        .description-heading {
+            background: #171316;
+            color: #fff;
+            font-size: 11px;
+            font-weight: 700;
+            margin-top: .24in;
+            padding: .095in .08in;
+            text-transform: uppercase;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
         }
 
         table {
@@ -223,6 +238,7 @@
             <div class="field"><strong>Cliente</strong>{{ $notaGasto->consignatario_nombre ?: $notaGasto->consignatario?->nombre }}</div>
         </div>
 
+        <div class="description-heading">Descripcion</div>
         <p class="description">{{ $notaGasto->descripcion }}</p>
 
         <table>

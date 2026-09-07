@@ -56,7 +56,7 @@ class NotaGastoController extends Controller
         }
 
         $cartas = $this->cartasOperacion($cartaPorte)->get();
-        $detalles = $this->detallesDesdeCobros($cartas->count());
+        $detalles = $this->detallesDesdeCobros($cartaPorte, $cartas->count());
 
         return view('facturacion.notas_gastos.preview', [
             'cartaPorte' => $cartaPorte,
@@ -262,13 +262,20 @@ class NotaGastoController extends Controller
             ->orderBy('numero_correlativo');
     }
 
-    private function detallesDesdeCobros(int $cantidadContenedores): array
+    private function detallesDesdeCobros(CartaPorte $cartaPorte, int $cantidadContenedores): array
     {
-        return ConceptoGasto::where('activo', true)
+        $conceptos = ConceptoGasto::where('activo', true)
             ->orderBy('orden')
             ->orderBy('nombre')
-            ->get()
-            ->map(function ($concepto) use ($cantidadContenedores) {
+            ->get();
+        $ultimaNota = $this->ultimaNotaValidaCliente($cartaPorte);
+        $detallesPrevios = $ultimaNota?->detalles
+            ->whereNotNull('concepto_gasto_id')
+            ->keyBy('concepto_gasto_id') ?? collect();
+
+        return $conceptos
+            ->map(function ($concepto) use ($cantidadContenedores, $detallesPrevios) {
+                $detallePrevio = $detallesPrevios->get($concepto->id);
                 $cantidad = $concepto->tipo_calculo === 'por_contenedor'
                     ? $cantidadContenedores
                     : 1;
@@ -277,14 +284,46 @@ class NotaGastoController extends Controller
                     'concepto_gasto_id' => $concepto->id,
                     'concepto_nombre' => $concepto->nombre,
                     'numero_factura' => null,
-                    'precio_unitario' => 0,
-                    'cantidad' => (float) $cantidad,
-                    'grupo' => $concepto->grupo,
-                    'incluido' => false,
+                    'precio_unitario' => (float) ($detallePrevio?->precio_unitario ?? 0),
+                    'cantidad' => (float) ($detallePrevio?->cantidad ?? $cantidad),
+                    'grupo' => $detallePrevio?->grupo ?? $concepto->grupo,
+                    'incluido' => (bool) $detallePrevio,
                     'orden' => $concepto->orden,
                 ];
             })
             ->all();
+    }
+
+    private function ultimaNotaValidaCliente(CartaPorte $cartaPorte): ?NotaGasto
+    {
+        $clienteId = $cartaPorte->consignatario_id;
+        $clienteNombre = $cartaPorte->consignatario_texto;
+
+        if (! $clienteId && blank($clienteNombre)) {
+            return null;
+        }
+
+        return NotaGasto::query()
+            ->with(['detalles' => function ($query) {
+                $query
+                    ->where('incluido', true)
+                    ->whereNotNull('concepto_gasto_id')
+                    ->orderBy('orden');
+            }])
+            ->where('estado', '<>', NotaGasto::ESTADO_ANULADA)
+            ->where(function ($query) use ($clienteId, $clienteNombre) {
+                if ($clienteId) {
+                    $query->where('consignatario_id', $clienteId);
+                }
+
+                if (filled($clienteNombre)) {
+                    $method = $clienteId ? 'orWhere' : 'where';
+                    $query->{$method}('consignatario_nombre', $clienteNombre);
+                }
+            })
+            ->latest('fecha')
+            ->latest('id')
+            ->first();
     }
 
     private function descripcionOperacion($cartas): string
@@ -349,7 +388,7 @@ class NotaGastoController extends Controller
                 : 0;
 
             $nota->detalles()->create([
-                'concepto_gasto_id' => $detalle['concepto_gasto_id'] ?? null,
+                'concepto_gasto_id' => ($detalle['concepto_gasto_id'] ?? null) ?: null,
                 'concepto_nombre' => $detalle['concepto_nombre'],
                 'numero_factura' => $this->cleanText($detalle['numero_factura'] ?? null),
                 'precio_unitario' => $detalle['precio_unitario'],
