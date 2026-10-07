@@ -343,10 +343,10 @@ class ExampleTest extends TestCase
         $preview->assertDontSee('CONT-C');
         $preview->assertDontSee('value="3139.00"', false);
         $preview->assertDontSee('value="280.00"', false);
-        $preview->assertSee('Valor flete Santo Tomas de Castilla hacia Guatemala por 2 contenedores conteniendo Mercaderia general, amparado con BL-BL-GRUPO Póliza-POL-GRUPO.');
+        $preview->assertSee('Valor flete Santo Tomas de Castilla hacia Guatemala por 2 contenedores No. CONT-A, CONT-B conteniendo Mercaderia general, amparado con BL-BL-GRUPO Póliza-POL-GRUPO.');
 
         $response = $this->post(route('facturacion.notas-gastos.store-desde-carta', $carta), [
-            'descripcion' => 'Texto escrito manualmente que no debe guardarse',
+            'descripcion' => 'Texto escrito manualmente que debe guardarse',
             'detalles' => [
                 [
                     'concepto_gasto_id' => $flete->id,
@@ -383,7 +383,7 @@ class ExampleTest extends TestCase
 
         $response->assertRedirect(route('facturacion.notas-gastos.show', $nota));
         $this->assertSame(2, $nota->cantidad_contenedores);
-        $this->assertSame('Valor flete Santo Tomas de Castilla hacia Guatemala por 2 contenedores conteniendo Mercaderia general, amparado con BL-BL-GRUPO Póliza-POL-GRUPO.', $nota->descripcion);
+        $this->assertSame('Texto escrito manualmente que debe guardarse', $nota->descripcion);
         $this->assertSame('6558.00', $nota->subtotal);
         $this->assertSame('7933.00', $nota->total);
         $this->assertCount(2, $nota->cartasPorte);
@@ -467,7 +467,7 @@ class ExampleTest extends TestCase
 
         $this->get(route('facturacion.notas-gastos.desde-carta', $carta))
             ->assertOk()
-            ->assertSee('Valor flete Santo Tomas de Castilla hacia Guatemala por 1 contenedor conteniendo Mercaderia general, amparado con BL-BL-UNICO Póliza-POL-UNICA.');
+            ->assertSee('Valor flete Santo Tomas de Castilla hacia Guatemala por 1 contenedor No. CONT-001 conteniendo Mercaderia general, amparado con BL-BL-UNICO Póliza-POL-UNICA.');
     }
 
     public function test_cartas_porte_list_shows_nota_gasto_state_by_bl_and_poliza(): void
@@ -1079,7 +1079,7 @@ class ExampleTest extends TestCase
         $this->get(route('facturacion.notas-gastos.desde-carta', $carta))
             ->assertOk()
             ->assertSee('+ Agregar cobro solo para esta nota')
-            ->assertSee('Descripcion');
+            ->assertSee('Descripción de facturación');
 
         $this->post(route('facturacion.notas-gastos.store-desde-carta', $carta), [
             'detalles' => [

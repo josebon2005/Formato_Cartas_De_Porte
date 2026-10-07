@@ -130,7 +130,8 @@
             line-height: 1.55;
             margin: 0 0 .31in;
             padding: .12in .08in;
-            text-transform: uppercase;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
         }
 
         .description-heading {
@@ -239,7 +240,7 @@
         </div>
 
         <div class="description-heading">Descripcion</div>
-        <p class="description">{{ $notaGasto->descripcion }}</p>
+        <p class="description">{{ $descripcion }}</p>
 
         <table>
             <thead>

@@ -5,12 +5,15 @@ namespace App\Http\Controllers;
 use App\Models\CartaPorte;
 use App\Models\ConceptoGasto;
 use App\Models\NotaGasto;
+use App\Services\DescripcionNotaGasto;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class NotaGastoController extends Controller
 {
+    public function __construct(private readonly DescripcionNotaGasto $descripciones) {}
+
     public function index(Request $request)
     {
         $notas = NotaGasto::query()
@@ -96,7 +99,9 @@ class NotaGastoController extends Controller
                 'procedencia_nombre' => $cartaPorte->procedencia_texto,
                 'destino' => $cartaPorte->destino,
                 'cantidad_contenedores' => $cartas->count(),
-                'descripcion' => $this->descripcionOperacion($cartas),
+                'descripcion' => array_key_exists('descripcion', $validated)
+                    ? ($validated['descripcion'] ?? '')
+                    : $this->descripcionOperacion($cartas),
                 'subtotal' => $totales['subtotal'],
                 'total' => $totales['total'],
                 'estado' => NotaGasto::ESTADO_NOTA_GENERADA,
@@ -116,15 +121,17 @@ class NotaGastoController extends Controller
     public function show(NotaGasto $notaGasto)
     {
         $notaGasto->load(['detalles', 'cartasPorte', 'consignatario']);
+        $descripcion = $this->descripciones->guardada($notaGasto);
 
-        return view('facturacion.notas_gastos.show', compact('notaGasto'));
+        return view('facturacion.notas_gastos.show', compact('notaGasto', 'descripcion'));
     }
 
     public function edit(NotaGasto $notaGasto)
     {
         $notaGasto->load(['detalles', 'cartasPorte', 'consignatario']);
+        $descripcion = $this->descripciones->guardada($notaGasto);
 
-        return view('facturacion.notas_gastos.edit', compact('notaGasto'));
+        return view('facturacion.notas_gastos.edit', compact('notaGasto', 'descripcion'));
     }
 
     public function update(Request $request, NotaGasto $notaGasto)
@@ -134,7 +141,9 @@ class NotaGastoController extends Controller
 
         DB::transaction(function () use ($notaGasto, $validated, $totales) {
             $notaGasto->update([
-                'descripcion' => $validated['descripcion'] ?? null,
+                'descripcion' => array_key_exists('descripcion', $validated)
+                    ? ($validated['descripcion'] ?? '')
+                    : $this->descripciones->guardada($notaGasto),
                 'subtotal' => $totales['subtotal'],
                 'total' => $totales['total'],
             ]);
@@ -208,8 +217,9 @@ class NotaGastoController extends Controller
         $copias = (int) ($validated['copias'] ?? 1);
 
         $notaGasto->load(['detalles', 'cartasPorte', 'consignatario']);
+        $descripcion = $this->descripciones->guardada($notaGasto);
 
-        return view('facturacion.notas_gastos.print', compact('notaGasto', 'copias'));
+        return view('facturacion.notas_gastos.print', compact('notaGasto', 'copias', 'descripcion'));
     }
 
     public function editFacturacion(NotaGasto $notaGasto)
@@ -220,7 +230,23 @@ class NotaGastoController extends Controller
                 ->with('error', 'La Nota de Gastos esta ANULADA y se conserva como historial.');
         }
 
-        return view('facturacion.notas_gastos.facturar', compact('notaGasto'));
+        $descripcion = $this->descripciones->guardada($notaGasto);
+
+        return view('facturacion.notas_gastos.facturar', compact('notaGasto', 'descripcion'));
+    }
+
+    public function descripcionDesdeCarta(CartaPorte $cartaPorte)
+    {
+        abort_unless($this->hasOperacionCompleta($cartaPorte), 422, 'La carta debe tener BL y póliza.');
+
+        return response()->json([
+            'descripcion' => $this->descripcionOperacion($this->cartasOperacion($cartaPorte)->get()),
+        ]);
+    }
+
+    public function regenerarDescripcion(NotaGasto $notaGasto)
+    {
+        return response()->json(['descripcion' => $this->descripciones->regenerar($notaGasto)]);
     }
 
     public function updateFacturacion(Request $request, NotaGasto $notaGasto)
@@ -259,7 +285,8 @@ class NotaGastoController extends Controller
             ->with(['consignatario', 'procedencia'])
             ->where('bl', $cartaPorte->bl)
             ->where('poliza', $cartaPorte->poliza)
-            ->orderBy('numero_correlativo');
+            ->orderBy('numero_correlativo')
+            ->orderBy('id');
     }
 
     private function detallesDesdeCobros(CartaPorte $cartaPorte, int $cantidadContenedores): array
@@ -328,14 +355,7 @@ class NotaGastoController extends Controller
 
     private function descripcionOperacion($cartas): string
     {
-        $cantidadContenedores = $cartas->count();
-        $cartaPorte = $cartas->first();
-        $procedencia = $cartas->first(fn (CartaPorte $carta) => filled($carta->procedencia_texto))?->procedencia_texto ?: 'ORIGEN';
-        $destino = $cartas->first(fn (CartaPorte $carta) => filled($carta->destino))?->destino ?: 'DESTINO';
-        $contenido = $cartas->first(fn (CartaPorte $carta) => filled($carta->contenido))?->contenido ?: 'CONTENIDO';
-        $contenedores = $cantidadContenedores === 1 ? 'contenedor' : 'contenedores';
-
-        return "Valor flete {$procedencia} hacia {$destino} por {$cantidadContenedores} {$contenedores} conteniendo {$contenido}, amparado con BL-{$cartaPorte->bl} Póliza-{$cartaPorte->poliza}.";
+        return $this->descripciones->generar($cartas);
     }
 
     private function validatedNotaData(Request $request): array

@@ -26,9 +26,22 @@
 @endphp
 
 <div class="span-3">
-    <label class="description-heading" for="descripcion">Descripcion</label>
-    <textarea id="descripcion" name="descripcion">{{ old('descripcion', $descripcion ?? $notaGasto->descripcion ?? '') }}</textarea>
+    <label class="description-heading" for="descripcion">Descripción de facturación</label>
+    <textarea id="descripcion" name="descripcion" rows="5">{{ "\n".old('descripcion', $descripcion ?? $notaGasto->descripcion ?? '') }}</textarea>
     @error('descripcion') <div class="error">{{ $message }}</div> @enderror
+    <div class="actions" style="margin-top: 8px;">
+        <button class="btn secondary small" type="button" data-regenerate-description
+            data-url="{{ isset($notaGasto) ? route('facturacion.notas-gastos.descripcion', $notaGasto) : route('facturacion.notas-gastos.descripcion-desde-carta', $cartaPorte) }}">REGENERAR DESCRIPCIÓN</button>
+        <span class="subtle" data-description-status role="status" aria-live="polite"></span>
+    </div>
+    <dialog data-description-dialog aria-labelledby="description-dialog-title" style="max-width: 480px; width: calc(100% - 32px); padding: 24px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--text);">
+        <h2 id="description-dialog-title" style="margin-top: 0;">Regenerar descripción</h2>
+        <p>¿Desea regenerar la descripción? Se reemplazarán los cambios realizados manualmente.</p>
+        <div class="actions">
+            <button class="btn secondary" type="button" data-description-cancel>Cancelar</button>
+            <button class="btn accent" type="button" data-description-confirm>Regenerar</button>
+        </div>
+    </dialog>
 </div>
 
 <div class="span-3 expense-toolbar">
@@ -216,6 +229,42 @@
             });
             addCustomButton?.addEventListener('click', addCustomExpense);
             recalculate();
+        })();
+    </script>
+@endpush
+
+@push('scripts')
+    <script>
+        (() => {
+            const button = document.querySelector('[data-regenerate-description]');
+            const dialog = document.querySelector('[data-description-dialog]');
+            const textarea = document.getElementById('descripcion');
+            const status = document.querySelector('[data-description-status]');
+
+            const regenerate = async () => {
+                dialog.close();
+                button.disabled = true;
+                status.textContent = 'Consultando las cartas relacionadas…';
+                try {
+                    const response = await fetch(button.dataset.url, {
+                        headers: { Accept: 'application/json' },
+                        cache: 'no-store',
+                    });
+                    if (!response.ok) throw new Error('No se pudo regenerar');
+                    const data = await response.json();
+                    if (typeof data.descripcion !== 'string') throw new Error('Respuesta inválida');
+                    textarea.value = data.descripcion;
+                    status.textContent = 'Descripción regenerada. Guarde la nota para conservarla.';
+                } catch (error) {
+                    status.textContent = 'No se pudo consultar la descripción. Intente nuevamente; su texto se conserva.';
+                } finally {
+                    button.disabled = false;
+                }
+            };
+
+            button?.addEventListener('click', () => dialog.showModal());
+            document.querySelector('[data-description-cancel]')?.addEventListener('click', () => dialog.close());
+            document.querySelector('[data-description-confirm]')?.addEventListener('click', regenerate);
         })();
     </script>
 @endpush

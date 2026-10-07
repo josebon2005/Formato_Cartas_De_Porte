@@ -661,6 +661,7 @@
                     <a class="btn secondary small" href="{{ route('cartas-porte.index') }}">Listado</a>
                     <a class="btn secondary small" href="{{ route('catalogos.index') }}">Datos</a>
                     <a class="btn secondary small" href="{{ route('facturacion.notas-gastos.index') }}">Facturacion</a>
+                    <a class="btn secondary small" href="{{ route('pagos-pilotos.index') }}">Pagos de Pilotos</a>
                     <a class="btn accent small" href="{{ route('cartas-porte.create') }}">Nueva carta</a>
                     <button class="btn secondary small theme-toggle" type="button" data-theme-toggle>Modo oscuro</button>
                     <form method="POST" action="{{ route('logout') }}">

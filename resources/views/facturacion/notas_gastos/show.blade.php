@@ -63,7 +63,7 @@
 
     <section class="panel" style="margin-bottom: 18px;">
         <div class="description-heading">Descripcion</div>
-        <p class="description-body">{{ $notaGasto->descripcion }}</p>
+        <p class="description-body" style="white-space: pre-wrap; overflow-wrap: anywhere;">{{ $descripcion }}</p>
     </section>
 
     <section class="panel" style="margin-bottom: 18px;">

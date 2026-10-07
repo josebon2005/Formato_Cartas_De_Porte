@@ -26,4 +26,14 @@ class Piloto extends Model
     {
         return $this->belongsTo(Cabezal::class, 'cabezal_id');
     }
+
+    public function pagos()
+    {
+        return $this->hasMany(PagoPiloto::class);
+    }
+
+    public function conceptosPago()
+    {
+        return $this->hasMany(PilotoConceptoPago::class)->orderBy('orden')->orderBy('id');
+    }
 }

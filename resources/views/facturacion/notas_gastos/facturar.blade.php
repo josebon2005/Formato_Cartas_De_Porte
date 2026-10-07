@@ -13,6 +13,11 @@
         </div>
     </div>
 
+    <section class="panel" style="margin-bottom: 18px;">
+        <div class="description-heading">Descripción de facturación</div>
+        <p class="description-body" style="white-space: pre-wrap; overflow-wrap: anywhere;">{{ $descripcion }}</p>
+    </section>
+
     <section class="panel">
         <form method="POST" action="{{ route('facturacion.notas-gastos.facturar.update', $notaGasto) }}">
             @csrf
