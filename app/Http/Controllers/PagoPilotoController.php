@@ -61,7 +61,7 @@ class PagoPilotoController extends Controller
         if ($existente) {
             return $this->duplicado($existente);
         }
-        $sueldo = $piloto->getAttribute('sueldo_base') ?? '0.00';
+        $sueldo = $piloto->getAttribute('sueldo_base') ?? config('pagos_pilotos.sueldo_base_default', '3816.90');
         $viajes = $this->pagos->viajesIniciales($piloto, $periodo['mes'], $periodo['anio']);
         $movimientos = $this->pagos->movimientosIniciales($piloto);
         $pagoPiloto = new PagoPiloto($periodo + [

@@ -40,7 +40,11 @@ php artisan optimize:clear
 4. Revise los valores, el sueldo base y los movimientos. Use **Agregar viaje** para registrar viajes sin Carta de Porte y **Aplicar** para activar o desactivar conceptos.
 5. Guarde el borrador, revise la impresión y, al realizar el pago, pulse **Marcar como pagado**.
 
-Los viajes automáticos se consultan por piloto y fecha. También se consideran cartas históricas sin `piloto_id` cuyo `piloto_nombre` coincide con el nombre del catálogo. Las tarifas existentes son cobros al cliente, por lo que los valores de viaje empiezan en Q. 0.00 y deben revisarse manualmente. El sueldo base también es editable; no se presupone un importe ni una tasa de IGSS o de seguro.
+Los viajes automáticos se consultan por piloto y fecha. También se consideran cartas históricas sin `piloto_id` cuyo `piloto_nombre` coincide con el nombre del catálogo. Las tarifas existentes son cobros al cliente, por lo que los valores de viaje empiezan en Q. 0.00 y deben revisarse manualmente. No se presupone una tasa de IGSS o de seguro.
+
+El sueldo base de cada pago nuevo comienza en **Q. 3,816.90**, definido en `config/pagos_pilotos.php`. Puede editarse libremente para ese pago y el total se actualiza inmediatamente. Los pagos existentes conservan su sueldo guardado; los cambios de un pago no afectan a otros pagos ni pilotos. Si posteriormente se configura un `sueldo_base` individual del piloto, ese valor tendrá prioridad sobre el predeterminado general, incluso si es cero.
+
+El ajuste del sueldo predeterminado no requiere migraciones nuevas. Si ya instaló el módulo, después de actualizar el código basta ejecutar `php artisan optimize:clear` en cada computadora.
 
 Las copias de viajes y movimientos pertenecen exclusivamente al pago. Cambiar una carta, un catálogo o una plantilla no cambia el histórico guardado. El cálculo se realiza en centavos tanto en la pantalla como en el servidor, excluyendo movimientos desactivados.
 
